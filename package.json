@@ -1,0 +1,24 @@
+{
+  "name": "uncover-multi-agent-research-fact-checking",
+  "version": "1.0.0",
+  "description": "UNCOVER - Multi-Agent Research & Fact-Checking Platform | PromptWars X Agent X 2.0 (PS03)",
+  "type": "module",
+  "main": "functions/index.js",
+  "scripts": {
+    "start": "npx serve public -l 3000",
+    "serve": "firebase serve",
+    "deploy": "firebase deploy",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:functions": "firebase deploy --only functions"
+  },
+  "keywords": [
+    "multi-agent",
+    "fact-checking",
+    "gemini",
+    "tavily",
+    "firebase",
+    "research-agent"
+  ],
+  "author": "UNCOVER Team",
+  "license": "MIT"
+}

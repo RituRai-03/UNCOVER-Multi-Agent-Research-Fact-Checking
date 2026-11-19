@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNCOVER — Research Report Dossier</title>
+  <meta name="description" content="Evidence-backed intelligence report with verified claims and conflict analysis.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+  <!-- Navigation Header -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-link">
+        <img src="assets/logo.svg" alt="UNCOVER Logo" class="brand-logo-img">
+      </a>
+      <nav aria-label="Report Navigation">
+        <ul class="nav-links">
+          <li class="nav-item"><a href="index.html">Overview</a></li>
+          <li class="nav-item"><a href="dashboard.html">Dashboard</a></li>
+          <li class="nav-item"><a href="report.html" class="active">Report Dossier</a></li>
+        </ul>
+      </nav>
+      <div class="nav-cta-group">
+        <a href="dashboard.html" class="btn btn-outline btn-sm">
+          ← Back to Workspace
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Report Content Container -->
+  <main class="container" style="padding-top: var(--space-8); padding-bottom: var(--space-16);">
+    <div id="reportContainer">
+      <!-- Loaded dynamically by report viewer script -->
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <div>&copy; 2026 UNCOVER Research Systems. PromptWars X Agent X 2.0 • PS03.</div>
+        <div><span style="color: var(--color-blue-baby);">60% Brown</span> • 30% Cream • <span style="color: var(--color-blue-baby);">10% Baby Blue</span></div>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module">
+    import { StorageService } from './js/storage.js';
+    import { getDemoDatasetById } from './js/demoData.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const reportId = urlParams.get('id');
+
+      let record = null;
+      if (reportId) {
+        record = StorageService.getResearchById(reportId);
+        if (!record) {
+          record = getDemoDatasetById(reportId);
+        }
+      }
+      
+      if (!record) {
+        record = StorageService.getActiveResearch() || getDemoDatasetById('demo_solar_capacity_2024');
+      }
+
+      renderReportDossier(record);
+    });
+
+    function renderReportDossier(record) {
+      const container = document.getElementById('reportContainer');
+      if (!container || !record) return;
+
+      const isDemo = record.isDemo !== false;
+      const stats = record.stats || { sourcesCount: 0, claimsTotal: 0, verifiedCount: 0, disputedCount: 0, confidenceScore: 85 };
+      const report = record.reportGeneratorAgent || {};
+      const claims = (record.factCheckerAgent && record.factCheckerAgent.claims) || [];
+      const conflicts = (record.conflictAnalystAgent && record.conflictAnalystAgent.conflicts) || [];
+      const sources = (record.researchAgent && record.researchAgent.sources) || [];
+
+      container.innerHTML = `
+        <div style="margin-bottom: var(--space-6);">
+          <div class="flex items-center gap-2" style="margin-bottom: var(--space-2);">
+            <span class="badge ${isDemo ? 'badge-blue' : 'badge-brown'}">
+              ${isDemo ? '✦ DEMO DATASET' : '● LIVE RECORD'}
+            </span>
+            ${record.category ? `<span class="badge badge-brown">${record.category}</span>` : ''}
+          </div>
+          <h1 style="font-size: clamp(2rem, 4vw, 2.75rem); color: var(--color-brown-dark); margin-bottom: var(--space-2);">
+            ${escapeHtml(record.title || record.query)}
+          </h1>
+          <p style="font-size: var(--text-sm); color: var(--color-brown-secondary);">
+            Investigated Inquiry: "<em>${escapeHtml(record.query)}</em>"
+          </p>
+        </div>
+
+        ${isDemo && record.disclaimer ? `
+          <div class="demo-notice-banner" style="margin-bottom: var(--space-8);">
+            <div class="demo-notice-text">
+              <span><strong>TRANSPARENCY NOTICE:</strong> ${escapeHtml(record.disclaimer)}</span>
+            </div>
+            <span class="badge badge-blue">PRE-PACKAGED</span>
+          </div>
+        ` : ''}
+
+        <!-- Metrics Overview Bar -->
+        <div class="card" style="margin-bottom: var(--space-8); background: var(--color-cream-subtle);">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-4); text-align: center;">
+            <div>
+              <div style="font-size: var(--text-2xl); font-weight: 800; color: var(--color-brown-dark);">${stats.sourcesCount}</div>
+              <div style="font-size: var(--text-xs); color: var(--color-brown-secondary); text-transform: uppercase;">Indexed Sources</div>
+            </div>
+            <div>
+              <div style="font-size: var(--text-2xl); font-weight: 800; color: var(--status-verified-text);">${stats.verifiedCount || 0}</div>
+              <div style="font-size: var(--text-xs); color: var(--color-brown-secondary); text-transform: uppercase;">Verified Claims</div>
+            </div>
+            <div>
+              <div style="font-size: var(--text-2xl); font-weight: 800; color: var(--status-disputed-text);">${stats.disputedCount || 0}</div>
+              <div style="font-size: var(--text-xs); color: var(--color-brown-secondary); text-transform: uppercase;">Disputed Claims</div>
+            </div>
+            <div>
+              <div style="font-size: var(--text-2xl); font-weight: 800; color: var(--color-blue-deep);">${stats.confidenceScore || 85}%</div>
+              <div style="font-size: var(--text-xs); color: var(--color-brown-secondary); text-transform: uppercase;">Evidence Confidence</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Executive Summary -->
+        <div class="card" style="margin-bottom: var(--space-8);">
+          <div class="card-header">
+            <h3 style="font-size: var(--text-xl);">Executive Intelligence Summary</h3>
+            <span class="badge badge-brown">REPORT GENERATOR</span>
+          </div>
+          <p style="font-size: var(--text-base); line-height: 1.7; color: var(--color-brown-dark); margin-bottom: var(--space-4);">
+            ${escapeHtml(report.executiveSummary || 'Summary under compilation...')}
+          </p>
+          ${report.keyFindings && report.keyFindings.length ? `
+            <div style="border-top: 1px dashed var(--color-brown-border); padding-top: var(--space-4); margin-top: var(--space-4);">
+              <h5 style="margin-bottom: var(--space-2); color: var(--color-brown-primary);">Core Corroborated Findings:</h5>
+              <ul style="padding-left: var(--space-5); font-size: var(--text-sm); color: var(--color-brown-light); display: flex; flex-direction: column; gap: 8px;">
+                ${report.keyFindings.map(f => `<li>${escapeHtml(f)}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- Claims Verification Table -->
+        <div class="card" style="margin-bottom: var(--space-8);">
+          <div class="card-header">
+            <h3 style="font-size: var(--text-xl);">Claim Verification Breakdown</h3>
+            <span class="badge badge-brown">FACT-CHECKER AGENT</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+            ${claims.map((c, idx) => `
+              <div style="background: var(--color-cream-subtle); border: 1px solid var(--color-brown-border); border-radius: var(--radius-md); padding: var(--space-4);">
+                <div class="flex items-center justify-between" style="margin-bottom: var(--space-2); flex-wrap: wrap; gap: 8px;">
+                  <span class="badge ${getStatusBadgeClass(c.status)}">${c.status}</span>
+                  <span style="font-size: var(--text-xs); font-family: var(--font-mono); color: var(--color-brown-secondary);">Certainty: ${(c.confidenceScore * 100).toFixed(0)}%</span>
+                </div>
+                <h4 style="font-size: var(--text-base); color: var(--color-brown-dark); margin-bottom: var(--space-2);">
+                  Claim #${idx + 1}: "${escapeHtml(c.statement)}"
+                </h4>
+                <p style="font-size: var(--text-sm); color: var(--color-brown-light); margin-bottom: var(--space-2);">
+                  <strong>Verification Rationale:</strong> ${escapeHtml(c.rationale)}
+                </p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Conflict Analysis Matrix -->
+        ${conflicts && conflicts.length ? `
+          <div class="card" style="margin-bottom: var(--space-8);">
+            <div class="card-header">
+              <h3 style="font-size: var(--text-xl);">Identified Conflict Matrix</h3>
+              <span class="badge badge-brown">CONFLICT ANALYST</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+              ${conflicts.map((conf, idx) => `
+                <div style="background: var(--color-cream-subtle); border: 1px solid var(--color-brown-border); border-radius: var(--radius-md); padding: var(--space-4);">
+                  <div class="flex items-center justify-between" style="margin-bottom: var(--space-2); flex-wrap: wrap; gap: 8px;">
+                    <span class="badge badge-status-disputed">CONFLICT #${idx + 1}: ${escapeHtml(conf.topic)}</span>
+                    <span class="badge badge-brown" style="font-size: 10px;">SEVERITY: ${conf.severity}</span>
+                  </div>
+                  <p style="font-size: var(--text-sm); color: var(--color-brown-dark); margin-bottom: var(--space-3);">
+                    ${escapeHtml(conf.description)}
+                  </p>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-3);">
+                    <div style="background: var(--color-cream-ivory); padding: var(--space-3); border-radius: var(--radius-sm); border: 1px solid var(--color-brown-border);">
+                      <div style="font-size: 11px; font-weight: bold; color: var(--color-brown-primary); margin-bottom: 2px;">
+                        ${escapeHtml(conf.sourceA ? conf.sourceA.name : 'Perspective A')}
+                      </div>
+                      <div style="font-size: var(--text-xs); color: var(--color-brown-light);">
+                        ${escapeHtml(conf.sourceA ? conf.sourceA.position : '')}
+                      </div>
+                    </div>
+                    <div style="background: var(--color-cream-ivory); padding: var(--space-3); border-radius: var(--radius-sm); border: 1px solid var(--color-brown-border);">
+                      <div style="font-size: 11px; font-weight: bold; color: var(--color-brown-primary); margin-bottom: 2px;">
+                        ${escapeHtml(conf.sourceB ? conf.sourceB.name : 'Perspective B')}
+                      </div>
+                      <div style="font-size: var(--text-xs); color: var(--color-brown-light);">
+                        ${escapeHtml(conf.sourceB ? conf.sourceB.position : '')}
+                      </div>
+                    </div>
+                  </div>
+                  <p style="font-size: var(--text-xs); color: var(--color-brown-secondary); line-height: 1.5; border-top: 1px dashed var(--color-brown-border); padding-top: var(--space-2);">
+                    <strong>Root Cause Analysis:</strong> ${escapeHtml(conf.explanation)}
+                  </p>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Sources Bibliography -->
+        ${sources && sources.length ? `
+          <div class="card" style="margin-bottom: var(--space-8);">
+            <div class="card-header">
+              <h3 style="font-size: var(--text-xl);">Authoritative Sources & Bibliography</h3>
+              <span class="badge badge-brown">RESEARCH AGENT</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+              ${sources.map(src => `
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); padding: var(--space-3); background: var(--color-cream-subtle); border-radius: var(--radius-sm); border: 1px solid var(--color-brown-border); flex-wrap: wrap;">
+                  <div style="flex: 1; min-width: 260px;">
+                    <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: 2px;">
+                      <span style="font-family: var(--font-mono); font-weight: bold; font-size: 11px; color: var(--color-blue-deep);">${src.citationKey || '[ref]'}</span>
+                      <a href="${src.url}" target="_blank" rel="noopener noreferrer" style="font-size: var(--text-sm); font-weight: 700; color: var(--color-brown-dark); text-decoration: underline;">
+                        ${escapeHtml(src.title)}
+                      </a>
+                    </div>
+                    <p style="font-size: var(--text-xs); color: var(--color-brown-secondary); margin-bottom: 4px;">
+                      ${escapeHtml(src.publisher || 'Independent')} • ${src.publishDate || '2024'} • Authority Score: ${((src.authorityScore || 0.9) * 100).toFixed(0)}%
+                    </p>
+                    <p style="font-size: var(--text-xs); color: var(--color-brown-light); font-style: italic;">
+                      "${escapeHtml(src.snippet || '')}"
+                    </p>
+                  </div>
+                  <a href="${src.url}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size: 11px; padding: 4px 8px;">
+                    Visit Source ↗
+                  </a>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Limitations & Conclusion -->
+        <div class="card" style="margin-bottom: var(--space-8);">
+          <div class="card-header">
+            <h3 style="font-size: var(--text-xl);">Limitations & Conclusion</h3>
+            <span class="badge badge-brown">DOSSIER SYNTHESIS</span>
+          </div>
+          ${report.limitations && report.limitations.length ? `
+            <div style="margin-bottom: var(--space-4);">
+              <h5 style="color: var(--color-brown-primary); margin-bottom: var(--space-2);">Empirical Limitations:</h5>
+              <ul style="padding-left: var(--space-5); font-size: var(--text-sm); color: var(--color-brown-light); display: flex; flex-direction: column; gap: 6px;">
+                ${report.limitations.map(lim => `<li>${escapeHtml(lim)}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+          <div style="border-top: 1px dashed var(--color-brown-border); padding-top: var(--space-4);">
+            <h5 style="color: var(--color-brown-primary); margin-bottom: var(--space-2);">Balanced Assessment:</h5>
+            <p style="font-size: var(--text-sm); color: var(--color-brown-dark); line-height: 1.6;">
+              ${escapeHtml(report.conclusion || 'Dossier concluded with empirical grounding.')}
+            </p>
+          </div>
+        </div>
+
+        <!-- Back to Workspace -->
+        <div class="flex justify-between items-center" style="margin-top: var(--space-8);">
+          <a href="dashboard.html" class="btn btn-secondary">← Return to Dashboard</a>
+          <button class="btn btn-primary" onclick="window.print()">
+            Print / Save Dossier
+          </button>
+        </div>
+      `;
+    }
+
+    function getStatusBadgeClass(status) {
+      switch (status) {
+        case 'VERIFIED': return 'badge-status-verified';
+        case 'PARTIALLY_VERIFIED': return 'badge-status-partially';
+        case 'DISPUTED': return 'badge-status-disputed';
+        default: return 'badge-status-unverified';
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+  </script>
+</body>
+</html>

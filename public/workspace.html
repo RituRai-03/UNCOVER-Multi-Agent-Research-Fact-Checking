@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNCOVER — Multi-Agent Execution Workspace</title>
+  <meta name="description" content="Watch UNCOVER's four independent AI agents research, corroborate, analyze conflicts, and synthesize factual dossiers in real-time.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Core Stylesheets (60% Brown | 30% Cream | 10% Baby Blue) -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/workspace.css">
+</head>
+<body>
+
+  <!-- =========================================================================
+       1. GLOBAL NAVIGATION
+       ========================================================================= -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-link" aria-label="UNCOVER Home">
+        <img src="assets/logo.svg" alt="UNCOVER Logo" class="brand-logo-img">
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav aria-label="Workspace Navigation">
+        <ul class="nav-links">
+          <li class="nav-item"><a href="index.html">Overview</a></li>
+          <li class="nav-item"><a href="dashboard.html">Dashboard</a></li>
+          <li class="nav-item"><a href="workspace.html" class="active">Agent Workspace</a></li>
+          <li class="nav-item"><a href="report.html">Report Dossier</a></li>
+        </ul>
+      </nav>
+
+      <!-- Nav CTA -->
+      <div class="nav-cta-group">
+        <a href="dashboard.html" class="btn btn-outline btn-sm">
+          ← Dashboard
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       2. WORKSPACE CONTENT
+       ========================================================================= -->
+  <main class="container" style="padding-top: var(--space-8); padding-bottom: var(--space-16);">
+
+    <!-- Workspace Topbar -->
+    <div class="workspace-topbar">
+      <div>
+        <div class="workspace-meta-tags" style="margin-bottom: var(--space-2);">
+          <span class="badge badge-blue" id="modeBadge">✦ DEMO PIPELINE</span>
+          <span class="badge badge-brown" id="depthBadge">STANDARD CHECK</span>
+          <span style="font-size: var(--text-xs); color: var(--color-brown-secondary); font-family: var(--font-mono);">
+            PIPELINE ORCHESTRATOR v1.0
+          </span>
+        </div>
+        <h1 class="workspace-topic-query" id="inquiryQueryText">
+          Loading investigation inquiry...
+        </h1>
+      </div>
+
+      <div class="workspace-actions">
+        <button class="btn btn-secondary btn-sm" id="rerunPipelineBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Re-run Pipeline
+        </button>
+      </div>
+    </div>
+
+    <!-- Dynamic Notice Container (Live Stage 4 Notice or Demo Scenario Selector) -->
+    <div id="workspaceNoticeContainer"></div>
+
+    <!-- Pipeline Step Progress Tracker -->
+    <div class="pipeline-progress-bar" aria-label="Agent Execution Milestones">
+      <!-- Step 1 -->
+      <div class="pipeline-step-item" id="tracker_step_1">
+        <div class="pipeline-step-indicator">01</div>
+        <div class="pipeline-step-info">
+          <span class="pipeline-step-name">Research Agent</span>
+          <span class="pipeline-step-status">QUEUED</span>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="pipeline-step-item" id="tracker_step_2">
+        <div class="pipeline-step-indicator">02</div>
+        <div class="pipeline-step-info">
+          <span class="pipeline-step-name">Fact-Checker</span>
+          <span class="pipeline-step-status">QUEUED</span>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="pipeline-step-item" id="tracker_step_3">
+        <div class="pipeline-step-indicator">03</div>
+        <div class="pipeline-step-info">
+          <span class="pipeline-step-name">Conflict Analyst</span>
+          <span class="pipeline-step-status">QUEUED</span>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="pipeline-step-item" id="tracker_step_4">
+        <div class="pipeline-step-indicator">04</div>
+        <div class="pipeline-step-info">
+          <span class="pipeline-step-name">Report Generator</span>
+          <span class="pipeline-step-status">QUEUED</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Four Independent Agent Cards Grid -->
+    <div class="workspace-agents-grid">
+
+      <!-- AGENT 1: Research Agent -->
+      <div class="agent-live-card status-waiting" id="agent_research_card">
+        <div>
+          <div class="agent-card-topbar">
+            <span class="agent-tag">AGENT 01</span>
+            <span class="agent-status-badge">WAITING</span>
+          </div>
+
+          <div class="agent-title-row">
+            <div class="agent-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            </div>
+            <div>
+              <div class="agent-name-text">Research Agent</div>
+              <div class="agent-role-subtext">Discovery & Claim Extraction</div>
+            </div>
+          </div>
+
+          <div class="agent-task-banner">Awaiting inquiry dispatch...</div>
+        </div>
+
+        <div class="agent-console-box" id="agent_research_console">
+          <div class="console-entry text-muted">Ready for execution stream...</div>
+        </div>
+
+        <div class="agent-footer-row">
+          <span class="agent-metrics-badge" id="agent_research_metric">0 items</span>
+          <button class="btn btn-outline btn-sm" data-action="inspect-agent" data-agent-id="agent_research">
+            Inspect I/O
+          </button>
+        </div>
+      </div>
+
+      <!-- AGENT 2: Fact-Checker Agent -->
+      <div class="agent-live-card status-waiting" id="agent_factchecker_card">
+        <div>
+          <div class="agent-card-topbar">
+            <span class="agent-tag">AGENT 02</span>
+            <span class="agent-status-badge">WAITING</span>
+          </div>
+
+          <div class="agent-title-row">
+            <div class="agent-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <div>
+              <div class="agent-name-text">Fact-Checker</div>
+              <div class="agent-role-subtext">Corroboration & Statuses</div>
+            </div>
+          </div>
+
+          <div class="agent-task-banner">Awaiting claims & sources...</div>
+        </div>
+
+        <div class="agent-console-box" id="agent_factchecker_console">
+          <div class="console-entry text-muted">Ready for execution stream...</div>
+        </div>
+
+        <div class="agent-footer-row">
+          <span class="agent-metrics-badge" id="agent_factchecker_metric">0 verified</span>
+          <button class="btn btn-outline btn-sm" data-action="inspect-agent" data-agent-id="agent_factchecker">
+            Inspect I/O
+          </button>
+        </div>
+      </div>
+
+      <!-- AGENT 3: Conflict Analyst Agent -->
+      <div class="agent-live-card status-waiting" id="agent_conflict_card">
+        <div>
+          <div class="agent-card-topbar">
+            <span class="agent-tag">AGENT 03</span>
+            <span class="agent-status-badge">WAITING</span>
+          </div>
+
+          <div class="agent-title-row">
+            <div class="agent-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
+            </div>
+            <div>
+              <div class="agent-name-text">Conflict Analyst</div>
+              <div class="agent-role-subtext">Discrepancy & Methodology</div>
+            </div>
+          </div>
+
+          <div class="agent-task-banner">Awaiting verification results...</div>
+        </div>
+
+        <div class="agent-console-box" id="agent_conflict_console">
+          <div class="console-entry text-muted">Ready for execution stream...</div>
+        </div>
+
+        <div class="agent-footer-row">
+          <span class="agent-metrics-badge" id="agent_conflict_metric">0 conflicts</span>
+          <button class="btn btn-outline btn-sm" data-action="inspect-agent" data-agent-id="agent_conflict">
+            Inspect I/O
+          </button>
+        </div>
+      </div>
+
+      <!-- AGENT 4: Report Generator Agent -->
+      <div class="agent-live-card status-waiting" id="agent_report_card">
+        <div>
+          <div class="agent-card-topbar">
+            <span class="agent-tag">AGENT 04</span>
+            <span class="agent-status-badge">WAITING</span>
+          </div>
+
+          <div class="agent-title-row">
+            <div class="agent-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div>
+              <div class="agent-name-text">Report Generator</div>
+              <div class="agent-role-subtext">Synthesis & Dossier Delivery</div>
+            </div>
+          </div>
+
+          <div class="agent-task-banner">Awaiting preceding agents...</div>
+        </div>
+
+        <div class="agent-console-box" id="agent_report_console">
+          <div class="console-entry text-muted">Ready for execution stream...</div>
+        </div>
+
+        <div class="agent-footer-row">
+          <span class="agent-metrics-badge" id="agent_report_metric">0% score</span>
+          <button class="btn btn-outline btn-sm" data-action="inspect-agent" data-agent-id="agent_report">
+            Inspect I/O
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Final Dossier Ready Banner -->
+    <div class="dossier-ready-banner" id="dossierReadyBanner">
+      <div class="dossier-ready-grid">
+        <div>
+          <span class="badge badge-blue" style="margin-bottom: var(--space-3);">✦ RESEARCH DOSSIER READY</span>
+          <h2 id="dossierBannerTitle" style="color: var(--color-cream-ivory); margin-bottom: var(--space-3); font-size: var(--text-2xl);">
+            Dossier Assembled
+          </h2>
+          <p id="dossierBannerSummary" style="color: var(--color-cream-base); opacity: 0.9; font-size: var(--text-sm); line-height: 1.6;">
+            All claims verified, conflicts analyzed, and citations formatted.
+          </p>
+        </div>
+        <div style="text-align: right;">
+          <button class="btn btn-primary btn-lg" id="viewDossierBtn" style="background-color: var(--color-cream-ivory); color: var(--color-brown-dark); border-color: var(--color-cream-ivory);">
+            View Final Dossier
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Evidence & Verification Feed -->
+    <section class="workspace-feed-section">
+      <div class="feed-header">
+        <div>
+          <h3 style="font-size: var(--text-lg); color: var(--color-brown-dark); margin-bottom: 2px;">
+            Evidence Corroboration Feed
+          </h3>
+          <p style="font-size: var(--text-xs); color: var(--color-brown-secondary);">
+            Real-time factual claims evaluated with empirical certainty metrics.
+          </p>
+        </div>
+        <span class="badge badge-brown">EVIDENCE CORPUS</span>
+      </div>
+
+      <div class="feed-items-container" id="claimFeedContainer">
+        <div style="text-align: center; padding: var(--space-8); color: var(--color-brown-secondary); font-size: var(--text-sm);">
+          Claims will populate as the Fact-Checker Agent completes cross-corroboration.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================================
+       3. AGENT I/O INSPECTOR MODAL
+       ========================================================================= -->
+  <div class="inspector-modal" id="inspectorModal" role="dialog" aria-modal="true" aria-labelledby="inspectorModalTitle">
+    <div class="inspector-modal-box">
+      <div class="inspector-header">
+        <div style="display: flex; align-items: center; gap: var(--space-2);">
+          <span style="color: var(--color-blue-baby); font-weight: bold;">✦</span>
+          <h4 id="inspectorModalTitle" style="color: var(--color-cream-ivory); font-size: var(--text-base);">
+            Inspect Agent I/O
+          </h4>
+        </div>
+        <button class="btn btn-outline btn-sm" id="closeInspectorBtn" style="color: var(--color-cream-ivory); border-color: rgba(245, 235, 221, 0.3);">
+          ✕ Close
+        </button>
+      </div>
+
+      <div class="inspector-tabs">
+        <button class="inspector-tab-btn active" data-tab="output">Structured Output JSON</button>
+        <button class="inspector-tab-btn" data-tab="input">Structured Input JSON</button>
+        <button class="inspector-tab-btn" data-tab="logs">Execution Diagnostic Logs</button>
+      </div>
+
+      <div class="inspector-body">
+        <pre class="inspector-code-view" id="inspectorCodeBlock">// Loading inspection data...</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       4. FOOTER
+       ========================================================================= -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <div>&copy; 2026 UNCOVER Research Systems. PromptWars X Agent X 2.0 • PS03.</div>
+        <div><span style="color: var(--color-blue-baby);">60% Brown</span> • 30% Cream • <span style="color: var(--color-blue-baby);">10% Baby Blue</span></div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/workspace.js"></script>
+</body>
+</html>
