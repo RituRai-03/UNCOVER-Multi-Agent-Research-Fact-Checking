@@ -13,6 +13,9 @@ ui-debug.log
 .env
 .env.local
 .env.*.local
+functions/.env
+functions/.env.*
+*.secret.local
 service-account*.json
 
 # Logs

@@ -233,26 +233,10 @@ function handleStartResearch() {
   }
 
   const depth = state.depthLevel || 'standard';
+  const isDemo = state.isDemoMode;
 
-  // If in LIVE mode, notify user that live research requires Stage 4 API connection
-  if (!state.isDemoMode) {
-    openConfirmModal({
-      title: 'Live API Integration Pending (Stage 4)',
-      message: `Live web research via Tavily Search and factual reasoning via Google Gemini API are scheduled for Stage 4 backend deployment. UNCOVER strictly forbids fabricating live sources or simulating fake agent completion. Would you like to switch to Demo Mode to test the four-agent orchestration workflow using verified reference datasets?`,
-      actionText: 'Switch to Demo Mode & Run',
-      onConfirm: () => {
-        state.isDemoMode = true;
-        if (modeToggle) modeToggle.checked = true;
-        updateModeUI(true);
-        const targetUrl = `workspace.html?query=${encodeURIComponent(query)}&depth=${depth}&demo=true`;
-        window.location.href = targetUrl;
-      }
-    });
-    return;
-  }
-
-  // Demo Mode: transition directly to workspace
-  const targetUrl = `workspace.html?query=${encodeURIComponent(query)}&depth=${depth}&demo=true`;
+  // Transition to Agent Workspace (runs Live API if isDemo=false, or Demo if isDemo=true)
+  const targetUrl = `workspace.html?query=${encodeURIComponent(query)}&depth=${depth}&demo=${isDemo}`;
   window.location.href = targetUrl;
 }
 

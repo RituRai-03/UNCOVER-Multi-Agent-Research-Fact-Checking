@@ -151,73 +151,93 @@ async function loadAndStartPipeline() {
   resetAllAgentCards();
 
   // =========================================================================
-  // 1. LIVE MODE HANDLING (Stage 4 Pending Gate)
+  // 1. LIVE MODE HANDLING (Live execution via Firebase Cloud Functions)
   // =========================================================================
   if (!isDemo) {
-    if (inquiryQueryEl) inquiryQueryEl.textContent = query ? `"${query}"` : '"Live Research Inquiry"';
-    if (modeBadgeEl) {
-      modeBadgeEl.textContent = '● LIVE MODE (STAGE 4 PENDING)';
-      modeBadgeEl.className = 'badge badge-brown';
-    }
-    if (depthBadgeEl) depthBadgeEl.textContent = depthParam === 'deep' ? 'DEEP CHECK' : 'STANDARD CHECK';
-
-    // Show prominent Stage 4 Notice
-    if (noticeContainer) {
-      noticeContainer.innerHTML = `
-        <div class="card card-brown" style="margin-bottom: var(--space-6); border-left: 4px solid var(--color-blue-baby);">
-          <div class="flex items-center justify-between" style="flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-2);">
-            <span class="badge badge-blue">● LIVE RESEARCH MODE (STAGE 4 PENDING)</span>
-            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--color-blue-baby);">STAGE 4 INTEGRATION REQUIRED</span>
+    if (!query) {
+      if (noticeContainer) {
+        noticeContainer.innerHTML = `
+          <div class="card" style="margin-bottom: var(--space-6);">
+            <h3>No Research Inquiry Provided</h3>
+            <p style="color: var(--color-brown-secondary); margin-bottom: var(--space-4);">Please enter a question on the dashboard to initiate live research.</p>
+            <a href="dashboard.html" class="btn btn-primary btn-sm">Return to Dashboard</a>
           </div>
-          <h3 style="color: var(--color-cream-ivory); margin-bottom: var(--space-2); font-size: var(--text-lg);">
-            Live Research Pipeline Pending Stage 4 Integration
-          </h3>
-          <p style="color: var(--color-cream-base); font-size: var(--text-sm); line-height: 1.6; margin-bottom: var(--space-4);">
-            Live web search with the Tavily Search API and autonomous reasoning with Google Gemini API are scheduled for Stage 4 backend deployment via Firebase Cloud Functions. UNCOVER strictly adheres to empirical integrity and does not simulate or fabricate live research findings.
-          </p>
-          <div class="flex items-center gap-3" style="flex-wrap: wrap;">
-            <a href="workspace.html?demo=true" class="btn btn-accent btn-sm">
-              ✦ Switch to Demo Mode & Run Pipeline
-            </a>
-            <a href="dashboard.html" class="btn btn-outline btn-sm" style="color: var(--color-cream-ivory); border-color: rgba(245, 235, 221, 0.4);">
-              ← Return to Dashboard
-            </a>
-          </div>
-        </div>
-      `;
-    }
-
-    // Set agents to WAITING with explicit task description (no fake completion!)
-    const agentIds = ['agent_research', 'agent_factchecker', 'agent_conflict', 'agent_report'];
-    agentIds.forEach(id => {
-      setAgentCardState(id, AgentStatus.WAITING, 'Live API integration pending Stage 4 deployment');
-      const consoleBox = document.getElementById(`${id}_console`);
-      if (consoleBox) {
-        consoleBox.innerHTML = `
-          <div class="console-entry text-muted">[${new Date().toLocaleTimeString()}] Live API integration pending Stage 4 deployment.</div>
-          <div class="console-entry text-muted">[${new Date().toLocaleTimeString()}] Agent execution paused to preserve empirical integrity.</div>
         `;
       }
-      const metric = document.getElementById(`${id}_metric`);
-      if (metric) metric.textContent = 'Pending Stage 4';
-    });
+      return;
+    }
 
-    // Update Tracker
-    document.querySelectorAll('.pipeline-step-item').forEach(item => {
-      item.classList.remove('active', 'completed');
-      const statusEl = item.querySelector('.pipeline-step-status');
-      if (statusEl) statusEl.textContent = 'PENDING';
-    });
+    if (inquiryQueryEl) inquiryQueryEl.textContent = `"${query}"`;
+    if (modeBadgeEl) {
+      modeBadgeEl.textContent = '● LIVE RESEARCH';
+      modeBadgeEl.className = 'badge badge-brown';
+    }
+    if (depthBadgeEl) depthBadgeEl.textContent = depthParam === 'deep' ? 'DEEP INVESTIGATION' : 'STANDARD INVESTIGATION';
 
-    if (feedContainer) {
-      feedContainer.innerHTML = `
-        <div style="text-align: center; padding: var(--space-6); color: var(--color-brown-secondary); font-size: var(--text-sm);">
-          Live claim evidence feed will activate in Stage 4 once live Tavily Search and Gemini AI are connected.
+    if (noticeContainer) {
+      noticeContainer.innerHTML = `
+        <div class="card" style="margin-bottom: var(--space-6); background: var(--color-cream-subtle); border-left: 4px solid var(--color-blue-deep); padding: var(--space-3) var(--space-4);">
+          <div class="flex items-center justify-between" style="font-size: var(--text-xs); color: var(--color-brown-dark); flex-wrap: wrap; gap: 8px;">
+            <div><strong>LIVE GROUNDING ACTIVE:</strong> Querying indexed web via Tavily Search & analyzing evidence with Google Gemini AI.</div>
+            <span class="badge badge-blue">FIREBASE BACKEND</span>
+          </div>
         </div>
       `;
     }
 
-    return; // Stop execution: DO NOT run sample data or pretend agents completed!
+    // Execute live orchestration pipeline
+    try {
+      await orchestrator.runInvestigation({
+        query,
+        depth: depthParam,
+        isDemo: false,
+        sampleData: null
+      });
+    } catch (err) {
+      console.error('[Workspace] Live orchestration failure:', err);
+
+      let errorTitle = 'Live Research Pipeline Execution Failure';
+      let errorDesc = err.message || 'An unexpected error occurred during execution.';
+
+      if (err.code === 'MISSING_API_SECRETS') {
+        errorTitle = 'Backend API Secrets Required';
+        errorDesc = 'Firebase Cloud Functions backend is online, but TAVILY_API_KEY or GEMINI_API_KEY is not configured. Configure secrets using "firebase functions:secrets:set" or switch to Demo Mode to test offline.';
+      } else if (err.code === 'BACKEND_UNREACHABLE') {
+        errorTitle = 'Backend Cloud Function Unreachable';
+        errorDesc = 'Could not connect to Firebase Cloud Functions at /api/research. Ensure functions are running locally (npm run serve) or deployed to Firebase Hosting.';
+      } else if (err.code === 'TAVILY_RATE_LIMITED' || err.code === 'GEMINI_RATE_LIMITED') {
+        errorTitle = 'API Provider Rate Limited';
+        errorDesc = 'API rate limits encountered from Tavily or Google Gemini. Please wait a moment before retrying.';
+      }
+
+      if (noticeContainer) {
+        noticeContainer.innerHTML = `
+          <div class="card card-brown" style="margin-bottom: var(--space-6); border-left: 4px solid #DF9B97;">
+            <div class="flex items-center justify-between" style="margin-bottom: var(--space-2); flex-wrap: wrap; gap: 8px;">
+              <span class="badge badge-status-disputed">PIPELINE EXECUTION HALTED</span>
+              <span style="font-family: var(--font-mono); font-size: 11px; color: var(--color-cream-base);">${err.code || 'ERROR'}</span>
+            </div>
+            <h3 style="color: var(--color-cream-ivory); margin-bottom: var(--space-2); font-size: var(--text-lg);">${escapeHtml(errorTitle)}</h3>
+            <p style="color: var(--color-cream-base); font-size: var(--text-sm); line-height: 1.6; margin-bottom: var(--space-4); opacity: 0.95;">
+              ${escapeHtml(errorDesc)}
+            </p>
+            <div class="flex items-center gap-3" style="flex-wrap: wrap;">
+              <a href="workspace.html?demo=true" class="btn btn-accent btn-sm">
+                ✦ Switch to Demo Mode
+              </a>
+              <button class="btn btn-outline btn-sm" onclick="location.reload()" style="color: var(--color-cream-ivory); border-color: rgba(245, 235, 221, 0.4);">
+                Retry Investigation
+              </button>
+              <a href="dashboard.html" class="btn btn-outline btn-sm" style="color: var(--color-cream-ivory); border-color: rgba(245, 235, 221, 0.4);">
+                ← Return to Dashboard
+              </a>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    return;
   }
 
   // =========================================================================

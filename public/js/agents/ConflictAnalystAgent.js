@@ -10,6 +10,8 @@
  * 6. Return structured conflict records for the Report Generator Agent.
  */
 
+import { callResearchApi } from '../apiClient.js';
+
 export class ConflictAnalystAgent {
   constructor(config = {}) {
     this.agentId = "agent_conflict";
@@ -20,12 +22,12 @@ export class ConflictAnalystAgent {
 
   /**
    * Execute Conflict Analyst phase
-   * @param {Object} input - { query, factCheckerOutput, researchOutput, sampleData }
+   * @param {Object} input - { query, depth, factCheckerOutput, researchOutput, sampleData }
    * @param {Function} onProgress - Progress event callback
    * @returns {Promise<Object>} Structured conflict output
    */
   async execute(input, onProgress = () => {}) {
-    const { factCheckerOutput, researchOutput, sampleData = null } = input;
+    const { query, depth = "standard", factCheckerOutput, researchOutput, sampleData = null } = input;
 
     if (!factCheckerOutput || !Array.isArray(factCheckerOutput.claims)) {
       throw new Error("[ConflictAnalystAgent] Fact-Checker output is required.");
@@ -39,28 +41,59 @@ export class ConflictAnalystAgent {
 
     log("Scanning claim matrix and source bibliographies for institutional divergence...");
 
-    const conflicts = this.identifyConflicts(factCheckerOutput, researchOutput, sampleData, log);
-    const consensusRating = this.assessConsensus(conflicts, factCheckerOutput.claims);
+    // =========================================================================
+    // 1. DEMO MODE PATH
+    // =========================================================================
+    if (sampleData) {
+      const conflicts = this.identifyConflicts(factCheckerOutput, researchOutput, sampleData, log);
+      const consensusRating = this.assessConsensus(conflicts, factCheckerOutput.claims);
 
-    log(`Conflict analysis finalized: ${conflicts.length} structural discrepancies identified. Consensus grade: ${consensusRating}.`);
+      log(`Conflict analysis finalized: ${conflicts.length} structural discrepancies identified. Consensus grade: ${consensusRating}.`);
+
+      return {
+        agentId: this.agentId,
+        agentName: this.name,
+        status: "COMPLETED",
+        conflicts,
+        totalConflicts: conflicts.length,
+        consensusRating,
+        executionLog,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    // =========================================================================
+    // 2. LIVE MODE PATH (Firebase Cloud Functions: Gemini AI)
+    // =========================================================================
+    log("Dispatching verification matrix to Gemini AI for cross-source discrepancy analysis...");
+
+    const result = await callResearchApi("conflict", query, depth, {
+      factCheckerOutput,
+      researchOutput
+    });
+
+    if (result.executionLog && Array.isArray(result.executionLog)) {
+      result.executionLog.forEach(l => log(l));
+    }
+
+    log(`Live conflict analysis complete: ${result.totalConflicts} discrepancies detected. Consensus rating: ${result.consensusRating}.`);
 
     return {
       agentId: this.agentId,
       agentName: this.name,
       status: "COMPLETED",
-      conflicts,
-      totalConflicts: conflicts.length,
-      consensusRating,
+      conflicts: result.conflicts || [],
+      totalConflicts: result.totalConflicts || 0,
+      consensusRating: result.consensusRating || "HIGH_CONSENSUS",
       executionLog,
       timestamp: new Date().toISOString()
     };
   }
 
   /**
-   * Identify conflicts between sources and claims
+   * Identify conflicts between sources and claims (Demo Mode)
    */
   identifyConflicts(factCheckerOutput, researchOutput, sampleData, log) {
-    // If sampleData provided or in demo mode, use pre-compiled high-fidelity conflicts
     if (sampleData && sampleData.conflictAnalystAgent && Array.isArray(sampleData.conflictAnalystAgent.conflicts)) {
       return sampleData.conflictAnalystAgent.conflicts.map((conf, idx) => {
         log(`Cataloging Conflict #${idx + 1}: [${conf.topic}] (Severity: ${conf.severity})`);
@@ -76,12 +109,11 @@ export class ConflictAnalystAgent {
       });
     }
 
-    // Do not fabricate pseudo-conflicts. Live conflict analysis requires Stage 4.
-    throw new Error("[ConflictAnalystAgent] Live conflict analysis requires Stage 4 Gemini AI API integration.");
+    throw new Error("[ConflictAnalystAgent] Live conflict analysis requires backend integration.");
   }
 
   /**
-   * Determine overall consensus rating
+   * Determine overall consensus rating (Demo Mode)
    */
   assessConsensus(conflicts, claims) {
     if (conflicts.length === 0) return "HIGH_CONSENSUS";

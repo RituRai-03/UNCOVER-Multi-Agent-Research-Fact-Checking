@@ -107,25 +107,12 @@ export class MultiAgentOrchestrator {
       throw err;
     }
 
-    // Strict Stage 3 gate: Live APIs (Gemini + Tavily) are scheduled for Stage 4.
-    // Live mode must NOT silently execute sample data or fake agent completion.
-    if (!isDemo || !sampleData) {
+    // In Demo mode, ensure sampleData is provided; never fabricate data
+    if (isDemo && !sampleData) {
       this.resetState();
       this.state.pipelineStatus = "PAUSED";
-      const pendingMessage = "Live web search and reasoning APIs are scheduled for Stage 4 integration. Live mode cannot execute without live APIs.";
-      
-      Object.keys(this.state.agentStates).forEach(id => {
-        this.state.agentStates[id].status = AgentStatus.WAITING;
-        this.state.agentStates[id].task = "Live API execution pending Stage 4 deployment";
-        this.state.agentStates[id].input = { query, mode: "LIVE", liveApisConfigured: false };
-        this.state.agentStates[id].output = null;
-        this.state.agentStates[id].logs = [
-          `[${new Date().toLocaleTimeString()}] Live API integration pending Stage 4 backend deployment.`,
-          `[${new Date().toLocaleTimeString()}] Agent execution paused to preserve empirical integrity.`
-        ];
-      });
-
-      this.emit("live_pending", { message: pendingMessage, query });
+      const demoErr = new Error("Demo Mode requires a verified demonstration dataset.");
+      this.emit("demo_scenario_required", { query });
       this.emit("state_change", this.getStateSummary());
       return null;
     }
@@ -154,7 +141,7 @@ export class MultiAgentOrchestrator {
       // STAGE 2: FACT-CHECKER AGENT
       // =====================================================================
       this.state.currentStep = 2;
-      const factCheckerInput = { query, researchOutput, sampleData };
+      const factCheckerInput = { query, depth, researchOutput, sampleData };
       const factCheckerOutput = await this.executeAgentStep(
         "agent_factchecker",
         "Corroborating claims against source evidence and assigning truth statuses",
@@ -168,7 +155,7 @@ export class MultiAgentOrchestrator {
       // STAGE 3: CONFLICT ANALYST AGENT
       // =====================================================================
       this.state.currentStep = 3;
-      const conflictInput = { query, factCheckerOutput, researchOutput, sampleData };
+      const conflictInput = { query, depth, factCheckerOutput, researchOutput, sampleData };
       const conflictOutput = await this.executeAgentStep(
         "agent_conflict",
         "Scanning for discrepancies in metrics, methodologies, and context",
@@ -182,7 +169,7 @@ export class MultiAgentOrchestrator {
       // STAGE 4: REPORT GENERATOR AGENT
       // =====================================================================
       this.state.currentStep = 4;
-      const reportInput = { query, researchOutput, factCheckerOutput, conflictOutput, sampleData };
+      const reportInput = { query, depth, researchOutput, factCheckerOutput, conflictOutput, sampleData };
       const reportOutput = await this.executeAgentStep(
         "agent_report",
         "Synthesizing executive summary, claim hierarchy, citations & conclusion",
@@ -199,13 +186,13 @@ export class MultiAgentOrchestrator {
       this.state.pipelineStatus = "COMPLETED";
 
       const finalRecord = {
-        id: sampleData && sampleData.id ? sampleData.id : "rec_" + Date.now(),
+        id: isDemo ? (sampleData && sampleData.id ? sampleData.id : "rec_demo_" + Date.now()) : "rec_live_" + Date.now(),
         isDemo: isDemo,
-        demoLabel: isDemo ? "DEMO DATASET" : "LIVE INVESTIGATION",
+        demoLabel: isDemo ? "DEMO DATASET" : "LIVE RESEARCH",
         disclaimer: isDemo ? (sampleData ? sampleData.disclaimer : "Generated in Demo Mode using empirical reference benchmarks.") : null,
         title: reportOutput.dossierTitle || query,
         query: query,
-        category: sampleData ? sampleData.category : "General Research",
+        category: isDemo ? (sampleData ? sampleData.category : "General Research") : "Live Web Grounding",
         createdAt: new Date().toISOString(),
         executionTimeMs: this.state.endTime - this.state.startTime,
         stats: reportOutput.compiledStats,

@@ -4,10 +4,12 @@
  * Responsibilities:
  * 1. Understand and semantically decompose the research inquiry.
  * 2. Formulate precise Boolean and multi-angle search queries.
- * 3. Ingest and organize source evidence supplied to it.
- * 4. Extract atomic, testable factual claims with provenance metadata.
+ * 3. Ingest and organize source evidence supplied to it (Tavily search in Live mode).
+ * 4. Extract atomic, testable factual claims with provenance metadata (Gemini in Live mode).
  * 5. Return structured, serializable findings for the Fact-Checker Agent.
  */
+
+import { callResearchApi } from '../apiClient.js';
 
 export class ResearchAgent {
   constructor(config = {}) {
@@ -23,7 +25,7 @@ export class ResearchAgent {
    * @param {Function} onProgress - Progress event callback (step, message)
    * @returns {Promise<Object>} Structured research output
    */
-  async execute(input, onProgress = () => {}) {
+  async execute(input, onProgress = () => { }) {
     const { query, depth = "standard", sampleData = null } = input;
 
     if (!query || typeof query !== "string" || !query.trim()) {
@@ -38,24 +40,53 @@ export class ResearchAgent {
 
     log(`Inquiry received: "${query.trim()}"`);
 
-    // Step 1: Deconstruct Research Inquiry
-    log("Deconstructing inquiry into semantic angles and factual sub-premises...");
-    const deconstructedAspects = this.deconstructInquiry(query);
+    // =========================================================================
+    // 1. DEMO MODE PATH
+    // =========================================================================
+    if (sampleData) {
+      log("Deconstructing inquiry into semantic angles and factual sub-premises...");
+      const deconstructedAspects = this.deconstructInquiry(query);
 
-    // Step 2: Formulate Search Queries
-    log(`Generating targeted search queries (depth: ${depth})...`);
-    const generatedQueries = this.generateSearchQueries(query, deconstructedAspects, depth);
-    log(`Formulated ${generatedQueries.length} search queries across primary institutional registries.`);
+      log(`Generating targeted search queries (depth: ${depth})...`);
+      const generatedQueries = this.generateSearchQueries(query, deconstructedAspects, depth);
+      log(`Formulated ${generatedQueries.length} search queries across primary institutional registries.`);
 
-    // Step 3: Ingest Source Evidence
-    log("Ingesting and normalizing source evidence...");
-    const sources = this.extractSources(query, sampleData);
-    log(`Aggregated ${sources.length} authoritative source records with citation keys.`);
+      log("Ingesting and normalizing source evidence from reference corpus...");
+      const sources = this.extractSources(query, sampleData);
+      log(`Aggregated ${sources.length} authoritative source records with citation keys.`);
 
-    // Step 4: Extract Testable Factual Claims
-    log("Extracting atomic factual claims with provenance anchors...");
-    const extractedClaims = this.extractClaims(query, sources, sampleData);
-    log(`Extracted ${extractedClaims.length} distinct empirical claims for cross-examination.`);
+      log("Extracting atomic factual claims with provenance anchors...");
+      const extractedClaims = this.extractClaims(query, sources, sampleData);
+      log(`Extracted ${extractedClaims.length} distinct empirical claims for cross-examination.`);
+
+      return {
+        agentId: this.agentId,
+        agentName: this.name,
+        status: "COMPLETED",
+        inputQuery: query,
+        depthLevel: depth,
+        deconstructedAspects,
+        generatedQueries,
+        sources,
+        extractedClaims,
+        executionLog,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    // =========================================================================
+    // 2. LIVE RESEARCH MODE (Firebase Cloud Functions: Tavily + Gemini)
+    // =========================================================================
+    log("Connecting to Firebase Cloud Functions backend...");
+    log(`Executing live Tavily web search (depth: ${depth})...`);
+
+    const result = await callResearchApi("research", query, depth, {});
+
+    if (result.executionLog && Array.isArray(result.executionLog)) {
+      result.executionLog.forEach(l => log(l));
+    }
+
+    log(`Live research grounded: ${result.sources.length} sources indexed, ${result.extractedClaims.length} claims extracted.`);
 
     return {
       agentId: this.agentId,
@@ -63,17 +94,16 @@ export class ResearchAgent {
       status: "COMPLETED",
       inputQuery: query,
       depthLevel: depth,
-      deconstructedAspects,
-      generatedQueries,
-      sources,
-      extractedClaims,
+      generatedQueries: result.generatedQueries || [query],
+      sources: result.sources || [],
+      extractedClaims: result.extractedClaims || [],
       executionLog,
       timestamp: new Date().toISOString()
     };
   }
 
   /**
-   * Deconstruct inquiry into structural inquiry branches
+   * Deconstruct inquiry into structural inquiry branches (Demo Mode)
    */
   deconstructInquiry(query) {
     const lower = query.toLowerCase();
@@ -100,7 +130,7 @@ export class ResearchAgent {
   }
 
   /**
-   * Formulate search query strings
+   * Formulate search query strings (Demo Mode)
    */
   generateSearchQueries(query, aspects, depth) {
     const cleaned = query.replace(/[?.,!"]/g, "").trim();
@@ -121,7 +151,7 @@ export class ResearchAgent {
   }
 
   /**
-   * Ingest and normalize source evidence
+   * Ingest and normalize source evidence (Demo Mode)
    */
   extractSources(query, sampleData) {
     if (sampleData && sampleData.researchAgent && Array.isArray(sampleData.researchAgent.sources)) {
@@ -137,12 +167,11 @@ export class ResearchAgent {
       }));
     }
 
-    // Do not fabricate fake sources. Live retrieval requires Stage 4.
-    throw new Error("[ResearchAgent] Live web search requires Stage 4 Tavily Search API integration. No pre-packaged dataset was provided.");
+    throw new Error("[ResearchAgent] Live web search requires backend integration.");
   }
 
   /**
-   * Extract atomic testable claims
+   * Extract atomic testable claims (Demo Mode)
    */
   extractClaims(query, sources, sampleData) {
     if (sampleData && sampleData.factCheckerAgent && Array.isArray(sampleData.factCheckerAgent.claims)) {
@@ -153,7 +182,6 @@ export class ResearchAgent {
       }));
     }
 
-    // Do not fabricate placeholder claims. Live extraction requires Stage 4.
-    throw new Error("[ResearchAgent] Live claim extraction requires Stage 4 Gemini AI API integration.");
+    throw new Error("[ResearchAgent] Live claim extraction requires backend integration.");
   }
 }

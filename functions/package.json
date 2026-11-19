@@ -3,6 +3,9 @@
   "description": "Secure Firebase Cloud Functions for UNCOVER AI Multi-Agent Research Platform",
   "version": "1.0.0",
   "main": "index.js",
+  "scripts": {
+    "test": "node test/backend.test.js"
+  },
   "engines": {
     "node": ">=18"
   },

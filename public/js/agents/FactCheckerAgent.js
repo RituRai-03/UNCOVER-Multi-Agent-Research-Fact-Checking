@@ -14,6 +14,8 @@
  * 6. Return structured verification output for the Conflict Analyst Agent.
  */
 
+import { callResearchApi } from '../apiClient.js';
+
 export class FactCheckerAgent {
   constructor(config = {}) {
     this.agentId = "agent_factchecker";
@@ -24,12 +26,12 @@ export class FactCheckerAgent {
 
   /**
    * Execute Fact-Checker Agent phase
-   * @param {Object} input - { query, researchOutput, sampleData }
+   * @param {Object} input - { query, depth, researchOutput, sampleData }
    * @param {Function} onProgress - Progress event callback
    * @returns {Promise<Object>} Structured verification output
    */
   async execute(input, onProgress = () => {}) {
-    const { researchOutput, sampleData = null } = input;
+    const { query, depth = "standard", researchOutput, sampleData = null } = input;
 
     if (!researchOutput || !Array.isArray(researchOutput.extractedClaims)) {
       throw new Error("[FactCheckerAgent] Research Agent output with extracted claims is required.");
@@ -44,41 +46,68 @@ export class FactCheckerAgent {
     const claims = researchOutput.extractedClaims;
     const sources = researchOutput.sources || [];
 
-    log(`Beginning verification of ${claims.length} extracted claims against ${sources.length} sources...`);
+    log(`Beginning verification of ${claims.length} claims against ${sources.length} sources...`);
 
-    const verifiedClaims = [];
+    // =========================================================================
+    // 1. DEMO MODE PATH
+    // =========================================================================
+    if (sampleData) {
+      const verifiedClaims = [];
 
-    // Evaluate each claim sequentially against source evidence
-    for (let i = 0; i < claims.length; i++) {
-      const claim = claims[i];
-      log(`Scrutinizing Claim #${i + 1}: "${claim.statement.substring(0, 60)}..."`);
+      for (let i = 0; i < claims.length; i++) {
+        const claim = claims[i];
+        log(`Scrutinizing Claim #${i + 1}: "${claim.statement.substring(0, 60)}..."`);
 
-      const evaluatedClaim = this.evaluateClaimAgainstEvidence(claim, sources, sampleData);
-      verifiedClaims.push(evaluatedClaim);
+        const evaluatedClaim = this.evaluateClaimAgainstEvidence(claim, sources, sampleData);
+        verifiedClaims.push(evaluatedClaim);
 
-      log(`Claim #${i + 1} status assigned: [${evaluatedClaim.status}] (Certainty: ${(evaluatedClaim.confidenceScore * 100).toFixed(0)}%)`);
+        log(`Claim #${i + 1} status assigned: [${evaluatedClaim.status}] (Certainty: ${(evaluatedClaim.confidenceScore * 100).toFixed(0)}%)`);
+      }
+
+      const stats = this.calculateVerificationStats(verifiedClaims);
+      log(`Verification completed: ${stats.verified} Verified, ${stats.partiallyVerified} Partially Verified, ${stats.disputed} Disputed, ${stats.unverified} Unverified.`);
+
+      return {
+        agentId: this.agentId,
+        agentName: this.name,
+        status: "COMPLETED",
+        claims: verifiedClaims,
+        stats,
+        executionLog,
+        timestamp: new Date().toISOString()
+      };
     }
 
-    // Calculate aggregated verification metrics
-    const stats = this.calculateVerificationStats(verifiedClaims);
-    log(`Verification completed: ${stats.verified} Verified, ${stats.partiallyVerified} Partially Verified, ${stats.disputed} Disputed, ${stats.unverified} Unverified.`);
+    // =========================================================================
+    // 2. LIVE MODE PATH (Firebase Cloud Functions: Gemini AI)
+    // =========================================================================
+    log("Dispatching claims to Gemini AI for evidence-anchored verification...");
+
+    const result = await callResearchApi("factchecker", query, depth, {
+      researchOutput
+    });
+
+    if (result.executionLog && Array.isArray(result.executionLog)) {
+      result.executionLog.forEach(l => log(l));
+    }
+
+    log(`Live verification complete: ${result.stats.verified} Verified, ${result.stats.partiallyVerified} Partially Verified, ${result.stats.disputed} Disputed, ${result.stats.unverified} Unverified.`);
 
     return {
       agentId: this.agentId,
       agentName: this.name,
       status: "COMPLETED",
-      claims: verifiedClaims,
-      stats,
+      claims: result.claims,
+      stats: result.stats,
       executionLog,
       timestamp: new Date().toISOString()
     };
   }
 
   /**
-   * Evaluate a single claim against available source evidence
+   * Evaluate a single claim against available source evidence (Demo Mode)
    */
   evaluateClaimAgainstEvidence(claim, sources, sampleData) {
-    // If running in demo mode or sampleData provided, match against verified baseline
     if (sampleData && sampleData.factCheckerAgent && Array.isArray(sampleData.factCheckerAgent.claims)) {
       const matched = sampleData.factCheckerAgent.claims.find(c => 
         c.id === claim.id || 
@@ -99,12 +128,11 @@ export class FactCheckerAgent {
       }
     }
 
-    // Do not fabricate verification decisions or confidence scores.
-    throw new Error("[FactCheckerAgent] Live claim verification requires Stage 4 Gemini AI API integration.");
+    throw new Error("[FactCheckerAgent] Live claim verification requires backend integration.");
   }
 
   /**
-   * Aggregate statistics
+   * Aggregate statistics (Demo Mode)
    */
   calculateVerificationStats(claims) {
     let verified = 0;
