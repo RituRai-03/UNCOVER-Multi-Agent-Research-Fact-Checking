@@ -9,7 +9,7 @@ import { APP_CONFIG } from './config.js';
 let cachedWorkingBaseUrl = null;
 
 /**
- * Get prioritized candidate base URLs for connecting to Cloud Functions
+ * Get prioritized candidate base URLs for connecting to Cloud Functions / Render Backend
  */
 function getCandidateBaseUrls() {
   if (cachedWorkingBaseUrl) {
@@ -21,12 +21,22 @@ function getCandidateBaseUrls() {
 
   if (primary) candidates.push(primary);
 
-  // Fallbacks for local emulator & production
+  // In production (Vercel, custom domain), NEVER target localhost or local IPv4
+  if (!APP_CONFIG.isLocal) {
+    if (!candidates.includes("/api")) candidates.push("/api");
+    const liveRenderBase = "https://uncover-backend-d8tn.onrender.com/api";
+    if (!candidates.includes(liveRenderBase)) candidates.push(liveRenderBase);
+    return candidates;
+  }
+
+  // Fallbacks for local emulator & standalone server (Local development only)
   const localV4 = "http://127.0.0.1:5001/uncover-multi-agent/us-central1/api";
   const localHost = "http://localhost:5001/uncover-multi-agent/us-central1/api";
+  const localStandalone = "http://127.0.0.1:5055/api";
 
   if (!candidates.includes(localV4)) candidates.push(localV4);
   if (!candidates.includes(localHost)) candidates.push(localHost);
+  if (!candidates.includes(localStandalone)) candidates.push(localStandalone);
   if (!candidates.includes("/api")) candidates.push("/api");
 
   return candidates;

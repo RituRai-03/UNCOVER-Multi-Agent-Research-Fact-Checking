@@ -22,22 +22,27 @@ export const APP_CONFIG = {
     bluePale: "#DCECF2"
   },
 
+  // Environment Detection
+  get isLocal() {
+    if (typeof window === "undefined") return true;
+    const { hostname, protocol } = window.location;
+    return hostname === "localhost" || hostname === "127.0.0.1" || protocol === "file:";
+  },
+
   // Backend API URL (Smart Dynamic Resolver for Local Emulator & Production)
   get apiBaseUrl() {
     if (typeof window === "undefined") {
       return "http://127.0.0.1:5001/uncover-multi-agent/us-central1/api";
     }
 
-    const { hostname, port, protocol } = window.location;
-
-    // 1. If running on Firebase Hosting (production or port 5000 emulator)
-    if (port === "5000" || (!hostname.includes("localhost") && hostname !== "127.0.0.1" && protocol !== "file:")) {
-      return "/api";
+    // 1. Local development (Live Server on 5500, npm start on 3000, etc.)
+    // Always use 127.0.0.1 to guarantee IPv4 connection to the Functions emulator on Windows
+    if (this.isLocal) {
+      return "http://127.0.0.1:5001/uncover-multi-agent/us-central1/api";
     }
 
-    // 2. Local development server (VS Code Live Server on 5500, npm start on 3000, etc.)
-    // Always use 127.0.0.1 to guarantee IPv4 connection to the Functions emulator on Windows
-    return "http://127.0.0.1:5001/uncover-multi-agent/us-central1/api";
+    // 2. Production (Vercel, custom domain): use clean relative path '/api' (proxied to Render backend)
+    return "/api";
   },
 
   // LocalStorage Keys
