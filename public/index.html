@@ -4,559 +4,139 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>UNCOVER — Multi-Agent Research & Fact-Checking</title>
-  <meta name="description" content="Go Beyond Information. Uncover the Truth. An intelligent multi-agent research platform that investigates complex topics, verifies claims, and detects conflicting information.">
+  <meta name="description" content="Go Beyond Information. Uncover the Truth. Multi-agent research and evidence-based fact-checking.">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 
-  <!-- Editorial Typography: DM Sans (Headings) & Manrope (Body) -->
+  <!-- Editorial & Academic Typography: DM Sans & Manrope -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
-  <!-- Core Stylesheets (60% Brown | 30% Cream | 10% Baby Blue) -->
+  <!-- Core Design Tokens & Component Styles (60% Brown | 30% Cream | 10% Baby Blue) -->
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/landing.css">
 </head>
-<body>
+<body class="home-scholar-body">
 
   <!-- =========================================================================
-       1. GLOBAL NAVIGATION
+       1. MINIMAL TOP NAVIGATION
        ========================================================================= -->
-  <header class="site-header">
-    <div class="container nav-container">
-      <a href="index.html" class="brand-link" aria-label="UNCOVER Home">
+  <header class="scholar-header">
+    <div class="scholar-nav-inner">
+      <a href="index.html" class="scholar-brand" aria-label="UNCOVER Home">
         <img src="assets/logo.svg" alt="UNCOVER Logo" class="brand-logo-img">
+        <span class="scholar-brand-title">UNCOVER</span>
       </a>
 
-      <!-- Desktop Nav -->
-      <nav aria-label="Main Navigation">
-        <ul class="nav-links">
-          <li class="nav-item"><a href="index.html" class="active">Overview</a></li>
-          <li class="nav-item"><a href="#agents">Agents</a></li>
-          <li class="nav-item"><a href="#workflow">Workflow</a></li>
-          <li class="nav-item"><a href="#features">Features</a></li>
-          <li class="nav-item"><a href="dashboard.html">Dashboard</a></li>
-        </ul>
-      </nav>
-
-      <!-- Nav CTA -->
-      <div class="nav-cta-group">
-        <button class="btn btn-accent btn-sm hide-mobile" data-action="launch-demo">
-          <span style="font-size: 11px;">✦</span> Quick Demo
-        </button>
-        <a href="dashboard.html" class="btn btn-primary btn-sm">
-          Launch UNCOVER
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      <nav class="scholar-nav-links" aria-label="Main Navigation">
+        <a href="history.html" class="scholar-nav-item">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          History
         </a>
-        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Navigation Menu" aria-expanded="false">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-        </button>
-      </div>
+        <div class="scholar-demo-toggle-wrap" title="Toggle between Live API Research and Offline Demo Mode">
+          <label class="scholar-switch" for="demoModeCheckbox">
+            <input type="checkbox" id="demoModeCheckbox">
+            <span class="scholar-slider"></span>
+          </label>
+          <span class="scholar-demo-label" id="demoModeLabel">Demo Mode</span>
+        </div>
+      </nav>
     </div>
   </header>
 
-  <!-- Mobile Navigation Drawer -->
-  <div class="mobile-nav-drawer" id="mobileNavDrawer">
-    <ul class="mobile-nav-list">
-      <li><a href="index.html">Overview</a></li>
-      <li><a href="#agents">Four Agents</a></li>
-      <li><a href="#workflow">How It Works</a></li>
-      <li><a href="#features">Platform Features</a></li>
-      <li><a href="dashboard.html">Research Dashboard</a></li>
-      <li><a href="dashboard.html?demo=true" style="color: var(--color-blue-deep); font-weight: 700;">Launch Instant Demo</a></li>
-    </ul>
-  </div>
+  <!-- =========================================================================
+       2. GOOGLE SCHOLAR-INSPIRED CENTRAL SEARCH INTERFACE
+       ========================================================================= -->
+  <main class="scholar-main" id="main-content">
+    <div class="scholar-hero-container">
 
-  <main id="main-content">
-    <!-- =========================================================================
-         2. HERO SECTION
-         ========================================================================= -->
-    <section class="hero-section">
-      <div class="container">
-        <div class="hero-tagline-pill">
-          <span class="dot"></span>
-          <span>PromptWars X Agent X 2.0 • PS03</span>
-        </div>
+      <!-- Website Title & Tagline -->
+      <div class="scholar-brand-hero">
+        <h1 class="scholar-hero-title">UNCOVER</h1>
+        <p class="scholar-hero-tagline">Go Beyond Information. Uncover the Truth.</p>
+        <p class="scholar-hero-sub">Multi-Agent Research & Fact-Checking</p>
+      </div>
 
-        <h1 class="hero-headline">
-          Go Beyond Information. <br>
-          <span class="highlight">Uncover the Truth.</span>
-        </h1>
-
-        <p class="hero-description">
-          An intelligent multi-agent research platform that investigates complex topics, verifies claims, detects conflicting information, and transforms information into evidence-backed insights.
-        </p>
-
-        <div class="hero-cta-group">
-          <a href="dashboard.html" class="btn btn-primary btn-lg">
-            Start Research
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
-          <button class="btn btn-secondary btn-lg" data-action="launch-demo">
-            <span style="color: var(--color-blue-deep); font-weight: bold;">✦</span>
-            Explore Demo Mode
+      <!-- Single Large Research Search Field -->
+      <form id="scholarSearchForm" class="scholar-search-box" role="search" novalidate>
+        <div class="scholar-input-group">
+          <div class="scholar-search-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </div>
+          <input 
+            type="text" 
+            id="scholarSearchInput" 
+            class="scholar-input" 
+            placeholder="Search a topic, research question or claim..." 
+            autocomplete="off"
+            spellcheck="false"
+            required
+            aria-label="Search research topic or question"
+            maxlength="500"
+          >
+          <button type="button" id="scholarClearBtn" class="scholar-clear-btn" aria-label="Clear query" style="display: none;">
+            &times;
+          </button>
+          <button type="submit" id="scholarSubmitBtn" class="scholar-submit-btn" aria-label="Start Research">
+            <span class="btn-text">Search</span>
+            <svg class="btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
           </button>
         </div>
 
-        <div class="hero-trust-bar">
-          <div class="hero-trust-item">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            <span>Real-Time Web Grounding (Tavily)</span>
-          </div>
-          <div class="hero-trust-item">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span>4 Independent Autonomous Agents</span>
-          </div>
-          <div class="hero-trust-item">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
-            <span>Zero Fabricated Citations</span>
-          </div>
-          <div class="hero-trust-item">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <span>Publish-Ready Intelligence Reports</span>
-          </div>
-        </div>
+        <!-- Inline Error Banner for Validation -->
+        <div id="scholarErrorBanner" class="scholar-error-banner" role="alert" style="display: none;"></div>
+      </form>
 
-        <!-- Editorial Live Preview Mockup -->
-        <div class="hero-mockup-wrapper">
-          <div class="mockup-header-bar">
-            <div class="mockup-dots">
-              <span class="mockup-dot active"></span>
-              <span class="mockup-dot"></span>
-              <span class="mockup-dot"></span>
-            </div>
-            <div class="mockup-title">UNCOVER // MULTI-AGENT ORCHESTRATION PIPELINE</div>
-            <span class="badge badge-blue">LIVE EVIDENCE STREAM</span>
-          </div>
-          <div class="mockup-content">
-            <div class="mockup-query-box">
-              <div class="mockup-query-label">Investigated Inquiry</div>
-              <div class="mockup-query-text">
-                "Did global solar power capacity surpass 2 terawatts in 2024, and what are the conflicting manufacturer estimates?"
-              </div>
-              <div style="margin-top: 14px; display: flex; gap: 8px;">
-                <span class="badge badge-brown">Energy & Climate</span>
-                <span class="badge badge-status-verified">3 Verified Claims</span>
-                <span class="badge badge-status-disputed">1 Conflict Detected</span>
-              </div>
-            </div>
-            <div class="mockup-agent-stream">
-              <div class="stream-item">
-                <div class="stream-agent-info">
-                  <span style="color: var(--color-brown-primary);">01</span> Research Agent
-                </div>
-                <span class="stream-status">7 Sources Parsed</span>
-              </div>
-              <div class="stream-item">
-                <div class="stream-agent-info">
-                  <span style="color: var(--color-brown-primary);">02</span> Fact-Checker Agent
-                </div>
-                <span class="stream-status">Cross-Corroborated</span>
-              </div>
-              <div class="stream-item">
-                <div class="stream-agent-info">
-                  <span style="color: var(--color-brown-primary);">03</span> Conflict Analyst
-                </div>
-                <span class="stream-status">IEA vs BloombergNEF Discrepancy</span>
-              </div>
-              <div class="stream-item">
-                <div class="stream-agent-info">
-                  <span style="color: var(--color-brown-primary);">04</span> Report Generator
-                </div>
-                <span class="stream-status">Dossier Assembled</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- =========================================================================
-         3. FOUR INDEPENDENT AGENTS
-         ========================================================================= -->
-    <section class="section-agents" id="agents">
-      <div class="container">
-        <div class="section-header">
-          <span class="section-label">Architecture</span>
-          <h2 class="section-title">Four Independent Autonomous Agents</h2>
-          <p class="section-subtext">
-            UNCOVER rejects monolithic single-prompt outputs. Research is partitioned across four specialized, decoupled AI agents that challenge, corroborate, and cross-examine each other's evidence.
-          </p>
-        </div>
-
-        <div class="agents-grid">
-          <!-- Agent 1: Research Agent -->
-          <div class="agent-card">
-            <span class="agent-badge-num">AGENT 01</span>
-            <div class="agent-card-header">
-              <div class="agent-icon-wrapper">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              </div>
-              <div>
-                <h3 class="agent-card-title">Research Agent</h3>
-                <div class="agent-card-role">Discovery & Sourcing</div>
-              </div>
-            </div>
-            <p class="agent-card-desc">
-              Formulates precise multi-angle search queries, searches live indexed web sources via Tavily, extracts exact URLs and timestamps, and isolates granular factual claims.
-            </p>
-            <ul class="agent-checklist">
-              <li>Semantic query decomposition</li>
-              <li>Real-time Tavily search execution</li>
-              <li>Source authority & date extraction</li>
-              <li>Discrete factual claim structuring</li>
-            </ul>
-          </div>
-
-          <!-- Agent 2: Fact-Checker Agent -->
-          <div class="agent-card">
-            <span class="agent-badge-num">AGENT 02</span>
-            <div class="agent-card-header">
-              <div class="agent-icon-wrapper">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              </div>
-              <div>
-                <h3 class="agent-card-title">Fact-Checker</h3>
-                <div class="agent-card-role">Verification & Corroboration</div>
-              </div>
-            </div>
-            <p class="agent-card-desc">
-              Rigorously tests each claim against the retrieved text corpus. Identifies supporting and contradicting citations, assesses certainty, and assigns categorical truth labels.
-            </p>
-            <ul class="agent-checklist">
-              <li>Multi-source cross-examination</li>
-              <li>Supporting & refuting quote isolation</li>
-              <li>Strict 4-tier status classification</li>
-              <li>Transparent verification rationales</li>
-            </ul>
-          </div>
-
-          <!-- Agent 3: Conflict Analyst -->
-          <div class="agent-card">
-            <span class="agent-badge-num">AGENT 03</span>
-            <div class="agent-card-header">
-              <div class="agent-icon-wrapper">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
-              </div>
-              <div>
-                <h3 class="agent-card-title">Conflict Analyst</h3>
-                <div class="agent-card-role">Discrepancy Analysis</div>
-              </div>
-            </div>
-            <p class="agent-card-desc">
-              Compares claims across diverse outlets to expose contradictions, numerical discrepancies, differing baselines, and methodological divergence.
-            </p>
-            <ul class="agent-checklist">
-              <li>Contradictory premise detection</li>
-              <li>Statistical & metric divergence</li>
-              <li>Context & methodology scrutiny</li>
-              <li>Side-by-side claim confrontation</li>
-            </ul>
-          </div>
-
-          <!-- Agent 4: Report Generator -->
-          <div class="agent-card">
-            <span class="agent-badge-num">AGENT 04</span>
-            <div class="agent-card-header">
-              <div class="agent-icon-wrapper">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-              </div>
-              <div>
-                <h3 class="agent-card-title">Report Generator</h3>
-                <div class="agent-card-role">Synthesis & Delivery</div>
-              </div>
-            </div>
-            <p class="agent-card-desc">
-              Transforms all verified evidence, conflict tables, and source records into an executive briefing dossier featuring live citations, copy, print, and PDF downloads.
-            </p>
-            <ul class="agent-checklist">
-              <li>Executive summary & key findings</li>
-              <li>Interactive clickable citations</li>
-              <li>Identified research limitations</li>
-              <li>PDF export & print readiness</li>
-            </ul>
-          </div>
+      <!-- Subtle Clickable Example Searches -->
+      <div class="scholar-examples-wrap">
+        <span class="scholar-examples-label">Try searching:</span>
+        <div class="scholar-examples-list" role="list">
+          <button type="button" class="scholar-example-pill" data-query="AI in education">
+            AI in education
+          </button>
+          <button type="button" class="scholar-example-pill" data-query="Climate change">
+            Climate change
+          </button>
+          <button type="button" class="scholar-example-pill" data-query="Social media and attention">
+            Social media and attention
+          </button>
+          <button type="button" class="scholar-example-pill" data-query="Quantum computing">
+            Quantum computing
+          </button>
         </div>
       </div>
-    </section>
 
-    <!-- =========================================================================
-         4. HOW IT WORKS & WORKFLOW VISUALIZATION
-         ========================================================================= -->
-    <section class="section-workflow" id="workflow">
-      <div class="container">
-        <div class="section-header">
-          <span class="section-label">Execution Pipeline</span>
-          <h2 class="section-title">End-to-End Orchestration Workflow</h2>
-          <p class="section-subtext">
-            UNCOVER enforces structured data handoffs between agents with zero hallucinations, complete provenance, and real-time state transitions.
-          </p>
-        </div>
-
-        <div class="workflow-card-container">
-          <div class="workflow-pipeline">
-            <div class="workflow-connector-line"></div>
-
-            <!-- Step 1 -->
-            <div class="workflow-step active">
-              <div class="workflow-step-circle">01</div>
-              <div class="workflow-step-title">Inquiry Intake</div>
-              <div class="workflow-step-desc">Natural language topic decomposition</div>
-            </div>
-
-            <!-- Step 2 -->
-            <div class="workflow-step">
-              <div class="workflow-step-circle">02</div>
-              <div class="workflow-step-title">Research Agent</div>
-              <div class="workflow-step-desc">Tavily web discovery & claim extraction</div>
-            </div>
-
-            <!-- Step 3 -->
-            <div class="workflow-step">
-              <div class="workflow-step-circle">03</div>
-              <div class="workflow-step-title">Source Collection</div>
-              <div class="workflow-step-desc">URL provenance & date tagging</div>
-            </div>
-
-            <!-- Step 4 -->
-            <div class="workflow-step">
-              <div class="workflow-step-circle">04</div>
-              <div class="workflow-step-title">Fact-Checker</div>
-              <div class="workflow-step-desc">Evidence corroboration & status assignment</div>
-            </div>
-
-            <!-- Step 5 -->
-            <div class="workflow-step">
-              <div class="workflow-step-circle">05</div>
-              <div class="workflow-step-title">Conflict Analyst</div>
-              <div class="workflow-step-desc">Statistical & contextual divergence analysis</div>
-            </div>
-
-            <!-- Step 6 -->
-            <div class="workflow-step">
-              <div class="workflow-step-circle">06</div>
-              <div class="workflow-step-title">Report Dossier</div>
-              <div class="workflow-step-desc">Exportable, cited research report</div>
-            </div>
-          </div>
-
-          <div class="workflow-legend">
-            <div class="workflow-legend-item">
-              <span class="legend-dot" style="background-color: var(--color-blue-baby);"></span>
-              <span>Active Agent Inspection Available</span>
-            </div>
-            <div class="workflow-legend-item">
-              <span class="legend-dot" style="background-color: var(--color-brown-primary);"></span>
-              <span>Deterministic Data Serialization</span>
-            </div>
-            <div class="workflow-legend-item">
-              <span class="legend-dot" style="background-color: var(--status-verified-text);"></span>
-              <span>Direct Link Provenance</span>
-            </div>
-          </div>
-        </div>
+      <!-- Understated Agent Pipeline Description -->
+      <div class="scholar-agents-byline">
+        Research Agent &middot; Fact-Checker &middot; Conflict Analyst &middot; Report Generator
       </div>
-    </section>
 
-    <!-- =========================================================================
-         5. FACT-CHECKING CRITERIA
-         ========================================================================= -->
-    <section class="section-criteria">
-      <div class="container">
-        <div class="section-header">
-          <span class="section-label">Evaluation Standard</span>
-          <h2 class="section-title">Strict Fact-Checking Taxonomy</h2>
-          <p class="section-subtext">
-            Every isolated claim undergoes rigorous verification, categorizing statements into four explicit, verifiable conditions.
-          </p>
-        </div>
-
-        <div class="criteria-grid">
-          <div class="criteria-item" style="border-top: 3px solid var(--status-verified-border);">
-            <span class="badge badge-status-verified">VERIFIED</span>
-            <h5>Fully Corroborated</h5>
-            <p>Directly confirmed by multiple reputable sources with concordant data, dates, and experimental context.</p>
-          </div>
-
-          <div class="criteria-item" style="border-top: 3px solid var(--status-partially-border);">
-            <span class="badge badge-status-partially">PARTIALLY VERIFIED</span>
-            <h5>Conditional Accuracy</h5>
-            <p>Core premise holds, but specific parameters, metrics, or nuances diverge or lack complete confirmation.</p>
-          </div>
-
-          <div class="criteria-item" style="border-top: 3px solid var(--status-disputed-border);">
-            <span class="badge badge-status-disputed">DISPUTED</span>
-            <h5>Conflicting Evidence</h5>
-            <p>Reputable sources present contradictory findings, clashing measurements, or incompatible conclusions.</p>
-          </div>
-
-          <div class="criteria-item" style="border-top: 3px solid var(--status-unverified-border);">
-            <span class="badge badge-status-unverified">UNVERIFIED</span>
-            <h5>Insufficient Data</h5>
-            <p>No primary empirical documentation or authoritative corroboration discovered across indexed records.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- =========================================================================
-         6. CORE FEATURES
-         ========================================================================= -->
-    <section class="section-features" id="features">
-      <div class="container">
-        <div class="section-header">
-          <span class="section-label">Capabilities</span>
-          <h2 class="section-title">Engineered for Accuracy & Scrutiny</h2>
-          <p class="section-subtext">
-            Designed specifically for researchers, investigative journalists, policy analysts, and decision-makers who cannot afford hallucinated data.
-          </p>
-        </div>
-
-        <div class="features-grid">
-          <div class="feature-box">
-            <div class="feature-icon-container">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-            </div>
-            <h4>Real-Time Tavily Search</h4>
-            <p>Queries indexed web sources live with query reformulation, avoiding outdated knowledge cutoffs and closed-loop model hallucinations.</p>
-          </div>
-
-          <div class="feature-box">
-            <div class="feature-icon-container">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-            </div>
-            <h4>Side-by-Side Conflict Matrix</h4>
-            <p>Compares diverging figures, methodologies, and source biases in a structured comparative layout to highlight why authorities disagree.</p>
-          </div>
-
-          <div class="feature-box">
-            <div class="feature-icon-container">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            </div>
-            <h4>Zero Key Exposure</h4>
-            <p>Built with serverless Firebase Cloud Functions so API keys (Gemini & Tavily) never reach browser memory or frontend network tabs.</p>
-          </div>
-
-          <div class="feature-box">
-            <div class="feature-icon-container">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </div>
-            <h4>Instant PDF & Print Dossier</h4>
-            <p>Export elegant, print-ready research intelligence dossiers formatted with executive summaries, confidence matrices, and cited footnotes.</p>
-          </div>
-
-          <div class="feature-box">
-            <div class="feature-icon-container">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            </div>
-            <h4>Offline Demo Environment</h4>
-            <p>Fully functional offline test harness featuring verified, disputed, and unverified ground-truth scenarios with zero API key requirement.</p>
-          </div>
-
-          <div class="feature-box">
-            <div class="feature-icon-container">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-            </div>
-            <h4>Inspectable Agent Logs</h4>
-            <p>Every step of intermediate agent reasoning, retrieved raw search snippets, and cross-comparison logs are accessible for full auditability.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- =========================================================================
-         7. CALL TO ACTION BANNER
-         ========================================================================= -->
-    <section class="section-cta">
-      <div class="container">
-        <div class="cta-banner-content">
-          <span class="badge badge-blue" style="margin-bottom: var(--space-4);">READY TO INVESTIGATE</span>
-          <h2>Uncover the Truth Behind Any Claim</h2>
-          <p>
-            Experience multi-agent intelligence that puts evidence, citations, and critical cross-examination at the forefront of AI research.
-          </p>
-          <div class="flex justify-center gap-4" style="flex-wrap: wrap;">
-            <a href="dashboard.html" class="btn btn-primary btn-lg" style="background-color: var(--color-cream-ivory); color: var(--color-brown-dark); border-color: var(--color-cream-ivory);">
-              Launch Workspace
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </a>
-            <button class="btn btn-outline btn-lg" data-action="launch-demo" style="color: var(--color-cream-ivory); border-color: rgba(245, 235, 221, 0.4);">
-              Run Pre-Loaded Demo
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
+    </div>
   </main>
 
   <!-- =========================================================================
-       8. EDITORIAL FOOTER
+       3. MINIMAL FOOTER
        ========================================================================= -->
-  <footer class="site-footer">
-    <div class="container">
-      <div class="footer-top">
-        <div class="footer-brand">
-          <h4>UNCOVER</h4>
-          <p>
-            Go Beyond Information. Uncover the Truth.<br>
-            A high-assurance multi-agent platform for deep research, factual cross-verification, and conflict analysis.
-          </p>
-          <div style="margin-top: 16px;">
-            <span class="badge badge-brown" style="color: var(--color-cream-ivory); border-color: rgba(245, 235, 221, 0.3);">
-              PS03 • Multi-Agent Research
-            </span>
-          </div>
-        </div>
-
-        <div class="footer-col">
-          <h5>Platform</h5>
-          <ul class="footer-links">
-            <li><a href="index.html">Overview</a></li>
-            <li><a href="dashboard.html">Research Dashboard</a></li>
-            <li><a href="#agents">Four Agents</a></li>
-            <li><a href="#workflow">Pipeline Workflow</a></li>
-            <li><a href="dashboard.html?demo=true">Demo Environment</a></li>
-          </ul>
-        </div>
-
-        <div class="footer-col">
-          <h5>Core Agents</h5>
-          <ul class="footer-links">
-            <li><a href="#agents">Research Agent</a></li>
-            <li><a href="#agents">Fact-Checker Agent</a></li>
-            <li><a href="#agents">Conflict Analyst</a></li>
-            <li><a href="#agents">Report Generator</a></li>
-          </ul>
-        </div>
-
-        <div class="footer-col">
-          <h5>Hackathon Specifications</h5>
-          <div class="footer-badge-box">
-            <p><strong>Hackathon:</strong> PromptWars X Agent X 2.0</p>
-            <p><strong>Problem Statement:</strong> PS03</p>
-            <p><strong>Stack:</strong> HTML5, CSS3, Vanilla JS ES6+</p>
-            <p><strong>Cloud:</strong> Firebase Hosting & Functions</p>
-            <p><strong>Intelligence:</strong> Gemini API & Tavily Search</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="footer-bottom">
-        <div>
-          &copy; 2026 UNCOVER Research Systems. Built for PromptWars X Agent X 2.0.
-        </div>
-        <div class="flex gap-4">
-          <span style="color: var(--color-blue-baby);">60% Brown</span> • 
-          <span>30% Cream</span> • 
-          <span style="color: var(--color-blue-baby);">10% Baby Blue</span>
-        </div>
+  <footer class="scholar-footer">
+    <div class="scholar-footer-inner">
+      <span>&copy; 2026 UNCOVER Research Platform &middot; PromptWars X Agent X 2.0 (PS03)</span>
+      <div class="scholar-footer-meta">
+        <a href="history.html" class="scholar-footer-link">Research History</a>
+        <span class="scholar-footer-sep">&middot;</span>
+        <span class="scholar-palette-note">60% Brown &middot; 30% Cream &middot; 10% Baby Blue</span>
       </div>
     </div>
   </footer>
 
-  <!-- Scripts -->
-  <script type="module" src="js/main.js"></script>
+  <!-- Controller Script -->
+  <script type="module" src="js/home.js"></script>
 </body>
 </html>

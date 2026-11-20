@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNCOVER — Research History & Saved Dossiers</title>
+  <meta name="description" content="View, search, and manage your past multi-agent research dossiers and factual corroboration records.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..800;1,9..40,400..800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body style="background-color: var(--color-cream-ivory); min-height: 100vh; display: flex; flex-direction: column;">
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-link" aria-label="UNCOVER Home">
+        <img src="assets/logo.svg" alt="UNCOVER Logo" class="brand-logo-img">
+        <span style="font-family: var(--font-heading); font-weight: 800; font-size: var(--text-lg); color: var(--color-brown-dark); margin-left: 8px;">UNCOVER</span>
+      </a>
+
+      <div class="nav-cta-group">
+        <a href="index.html" class="btn btn-outline btn-sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          New Search
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container" style="flex: 1; padding-top: var(--space-8); padding-bottom: var(--space-16); max-width: 960px;">
+
+    <!-- Topbar Heading & Actions -->
+    <div class="flex items-center justify-between" style="flex-wrap: wrap; gap: var(--space-4); margin-bottom: var(--space-6); border-bottom: 1px solid var(--color-brown-border); padding-bottom: var(--space-4);">
+      <div>
+        <h1 style="font-size: clamp(1.75rem, 3vw, 2.25rem); color: var(--color-brown-dark); margin-bottom: 4px;">Research History</h1>
+        <p style="font-size: var(--text-sm); color: var(--color-brown-secondary);">Saved multi-agent research investigations and verified fact-checking dossiers.</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button id="clearAllHistoryBtn" class="btn btn-outline btn-sm" style="color: var(--status-disputed-text); border-color: var(--status-disputed-border);" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          Clear All History
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div style="margin-bottom: var(--space-6);">
+      <div style="position: relative; max-width: 480px;">
+        <input 
+          type="text" 
+          id="historySearchInput" 
+          placeholder="Filter saved research by topic or keyword..." 
+          style="width: 100%; padding: 10px 14px 10px 36px; border: 1.5px solid var(--color-brown-border); border-radius: var(--radius-md); font-family: var(--font-body); font-size: var(--text-sm); background: var(--color-cream-subtle);"
+        >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 12px; top: 12px; color: var(--color-brown-secondary);">
+          <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </div>
+    </div>
+
+    <!-- History Items Container -->
+    <div id="historyListContainer" style="display: flex; flex-direction: column; gap: var(--space-4);">
+      <!-- Loaded dynamically by history.js -->
+    </div>
+
+  </main>
+
+  <!-- Clear Confirmation Modal -->
+  <div id="clearHistoryModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-box" style="max-width: 440px;">
+      <h3 style="color: var(--color-brown-dark); margin-bottom: var(--space-2);">Clear All History?</h3>
+      <p style="font-size: var(--text-sm); color: var(--color-brown-secondary); margin-bottom: var(--space-5);">
+        This will permanently remove all saved research investigations from your browser storage. This action cannot be undone.
+      </p>
+      <div class="flex justify-end gap-3">
+        <button id="cancelClearBtn" class="btn btn-secondary btn-sm">Cancel</button>
+        <button id="confirmClearBtn" class="btn btn-sm" style="background: var(--status-disputed-text); color: white; border: none;">Yes, Clear History</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-bottom">
+      <div>&copy; 2026 UNCOVER Research Systems &middot; PromptWars X Agent X 2.0</div>
+      <div>60% Brown &middot; 30% Cream &middot; 10% Baby Blue</div>
+    </div>
+  </footer>
+
+  <script type="module" src="js/history.js"></script>
+</body>
+</html>

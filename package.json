@@ -6,9 +6,9 @@
   "main": "functions/index.js",
   "scripts": {
     "start": "npx serve public -l 3000",
-    "test": "npm --prefix functions test && node test/frontend.test.js",
+    "test": "npm --prefix functions test && node test/frontend.test.js && node test/assets.test.js",
     "test:backend": "npm --prefix functions test",
-    "test:frontend": "node test/frontend.test.js",
+    "test:frontend": "node test/frontend.test.js && node test/assets.test.js",
     "serve": "firebase serve",
     "deploy": "firebase deploy",
     "deploy:hosting": "firebase deploy --only hosting",

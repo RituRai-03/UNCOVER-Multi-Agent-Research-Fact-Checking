@@ -1,39 +1,32 @@
 /**
- * UNCOVER - Multi-Agent Workspace Controller
- * 
- * Drives the real-time execution UI for the 4 independent agents:
- * - Listens to actual pipeline events from MultiAgentOrchestrator
- * - Updates agent statuses: WAITING, RUNNING, COMPLETED, FAILED
- * - Appends live diagnostic log streams to each agent's console
- * - Populates live claim verification feeds
- * - Provides interactive structured I/O inspection for each agent
- * - Persists completed dossiers to LocalStorage via StorageService
+ * UNCOVER - Research Workspace Controller
+ * Minimal, academic progress timeline driving the 4 independent agents.
  */
 
 import { MultiAgentOrchestrator, AgentStatus } from './orchestrator.js';
 import { StorageService } from './storage.js';
-import { DEMO_DATASETS, getDemoDatasetById } from './demoData.js';
+import { DEMO_DATASETS, getDemoDatasetById, findDemoDatasetByQuery } from './demoData.js';
 import { showToast } from './main.js';
 
 let orchestrator;
 let currentInvestigationRecord = null;
-let activeInspectAgentId = 'agent_research';
-let activeInspectTab = 'output'; // 'input' | 'output' | 'logs'
+let autoRedirectTimer = null;
 
 // DOM References
 let inquiryQueryEl;
 let modeBadgeEl;
-let depthBadgeEl;
-let rerunPipelineBtn;
+let pipelineStatusBadgeEl;
+let progressFillEl;
+let currentPhaseLabelEl;
+let progressPercentLabelEl;
+let noticeContainer;
 let dossierBanner;
-let inspectorModal;
-let inspectorModalTitle;
-let inspectorCodeBlock;
-let inspectorTabs;
-let feedContainer;
+let viewReportBtn;
+let redirectCountdownMsg;
 
 document.addEventListener('DOMContentLoaded', () => {
   initElements();
+  initCollapsibleLogs();
   initOrchestrator();
   loadAndStartPipeline();
 });
@@ -41,94 +34,102 @@ document.addEventListener('DOMContentLoaded', () => {
 function initElements() {
   inquiryQueryEl = document.getElementById('inquiryQueryText');
   modeBadgeEl = document.getElementById('modeBadge');
-  depthBadgeEl = document.getElementById('depthBadge');
-  rerunPipelineBtn = document.getElementById('rerunPipelineBtn');
+  pipelineStatusBadgeEl = document.getElementById('pipelineStatusBadge');
+  progressFillEl = document.getElementById('workspaceProgressFill');
+  currentPhaseLabelEl = document.getElementById('currentPhaseLabel');
+  progressPercentLabelEl = document.getElementById('progressPercentLabel');
+  noticeContainer = document.getElementById('workspaceNoticeContainer');
   dossierBanner = document.getElementById('dossierReadyBanner');
-  inspectorModal = document.getElementById('inspectorModal');
-  inspectorModalTitle = document.getElementById('inspectorModalTitle');
-  inspectorCodeBlock = document.getElementById('inspectorCodeBlock');
-  inspectorTabs = document.querySelectorAll('.inspector-tab-btn');
-  feedContainer = document.getElementById('claimFeedContainer');
+  viewReportBtn = document.getElementById('viewReportBtn');
+  redirectCountdownMsg = document.getElementById('redirectCountdownMsg');
+}
 
-  // Inspector Close
-  const closeInspectorBtn = document.getElementById('closeInspectorBtn');
-  if (closeInspectorBtn) {
-    closeInspectorBtn.addEventListener('click', closeInspector);
-  }
+/**
+ * Handle collapsible activity log toggles
+ */
+function initCollapsibleLogs() {
+  const toggleButtons = document.querySelectorAll('.activity-toggle-btn');
+  toggleButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-toggle');
+      const box = document.getElementById(targetId);
+      const textSpan = btn.querySelector('.toggle-text');
+      const arrowSpan = btn.querySelector('.toggle-arrow');
 
-  // Inspector Tab Switching
-  inspectorTabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      inspectorTabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      activeInspectTab = tab.getAttribute('data-tab');
-      renderInspectorContent();
-    });
-  });
+      if (!box) return;
 
-  // Re-run Button
-  if (rerunPipelineBtn) {
-    rerunPipelineBtn.addEventListener('click', () => {
-      loadAndStartPipeline();
-    });
-  }
-
-  // Bind Agent Card "Inspect" buttons
-  const inspectButtons = document.querySelectorAll('[data-action="inspect-agent"]');
-  inspectButtons.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const agentId = btn.getAttribute('data-agent-id');
-      openInspector(agentId);
+      const isHidden = box.style.display === 'none';
+      if (isHidden) {
+        box.style.display = 'block';
+        if (textSpan) textSpan.textContent = 'Hide details';
+        if (arrowSpan) arrowSpan.innerHTML = '&utrif;';
+      } else {
+        box.style.display = 'none';
+        if (textSpan) textSpan.textContent = 'View details';
+        if (arrowSpan) arrowSpan.innerHTML = '&dtrif;';
+      }
     });
   });
 }
 
 /**
- * Initialize Central Orchestrator & Event Subscriptions
+ * Initialize Central Orchestrator & Event Listeners
  */
 function initOrchestrator() {
   orchestrator = new MultiAgentOrchestrator();
 
-  // 1. Global State Change
+  // 1. Pipeline State Change
   orchestrator.on('state_change', (summary) => {
-    updatePipelineTracker(summary);
+    updateProgressUI(summary);
   });
 
-  // 2. Agent Start Event
+  // 2. Agent Start
   orchestrator.on('agent_start', ({ agentId, task }) => {
-    setAgentCardState(agentId, AgentStatus.RUNNING, task);
+    setAgentRowState(agentId, 'running', 'RUNNING', task || 'Processing empirical data...');
   });
 
-  // 3. Agent Progress Log Event
+  // 3. Agent Progress Log
   orchestrator.on('agent_progress', ({ agentId, message }) => {
     appendAgentLog(agentId, message);
+    updateAgentMessage(agentId, message);
   });
 
-  // 4. Agent Complete Event
+  // 4. Agent Complete
   orchestrator.on('agent_complete', ({ agentId, output }) => {
-    setAgentCardState(agentId, AgentStatus.COMPLETED, `Completed at ${new Date().toLocaleTimeString()}`);
-    updateAgentMetrics(agentId, output);
-
-    if (agentId === 'agent_factchecker' && output.claims) {
-      renderClaimsFeed(output.claims);
-    }
+    setAgentRowState(agentId, 'completed', 'COMPLETED', `Completed at ${new Date().toLocaleTimeString()}`);
   });
 
-  // 5. Final Pipeline Complete Event
+  // 5. Final Pipeline Complete
   orchestrator.on('pipeline_complete', (finalDossier) => {
     currentInvestigationRecord = finalDossier;
+
+    // Persist to storage
     StorageService.saveResearch(finalDossier);
     StorageService.setActiveResearch(finalDossier);
+
+    // Update UI
+    if (pipelineStatusBadgeEl) {
+      pipelineStatusBadgeEl.textContent = 'COMPLETED';
+      pipelineStatusBadgeEl.className = 'badge badge-status-verified';
+    }
+    if (progressFillEl) progressFillEl.style.width = '100%';
+    if (progressPercentLabelEl) progressPercentLabelEl.textContent = '100%';
+    if (currentPhaseLabelEl) currentPhaseLabelEl.textContent = 'Multi-agent corroboration and synthesis finished.';
+
     revealDossierBanner(finalDossier);
-    showToast('✦ Multi-Agent Research Dossier Complete!', 'info', 3500);
+    showToast('✦ Research Dossier Complete!', 'info', 3000);
   });
 
   // 6. Error Handling
   orchestrator.on('error', ({ message, agentId }) => {
     if (agentId) {
-      setAgentCardState(agentId, AgentStatus.FAILED, `Failed: ${message}`);
+      setAgentRowState(agentId, 'failed', 'FAILED', `Error: ${message}`);
     }
-    showToast(`Error: ${message}`, 'warning', 4000);
+    if (pipelineStatusBadgeEl) {
+      pipelineStatusBadgeEl.textContent = 'HALTED';
+      pipelineStatusBadgeEl.className = 'badge badge-status-disputed';
+    }
+    showToast(`Execution halted: ${message}`, 'warning', 4500);
   });
 }
 
@@ -140,52 +141,41 @@ async function loadAndStartPipeline() {
   const queryParam = urlParams.get('query');
   const demoIdParam = urlParams.get('demoId');
   const depthParam = urlParams.get('depth') || 'standard';
-  const isDemo = urlParams.get('demo') !== 'false';
+  const isDemo = urlParams.get('demo') === 'true' || urlParams.get('demo') === '1';
 
-  const noticeContainer = document.getElementById('workspaceNoticeContainer');
   const query = queryParam ? decodeURIComponent(queryParam).trim() : '';
 
-  // Clear previous state
-  if (feedContainer) feedContainer.innerHTML = '';
-  if (dossierBanner) dossierBanner.classList.remove('active');
-  resetAllAgentCards();
+  // Clear notice & banner
+  if (noticeContainer) noticeContainer.innerHTML = '';
+  if (dossierBanner) dossierBanner.style.display = 'none';
+  resetAllRows();
+
+  // Validate Query Presence
+  if (!query && !demoIdParam) {
+    if (noticeContainer) {
+      noticeContainer.innerHTML = `
+        <div class="card" style="margin-bottom: var(--space-6); text-align: center; padding: var(--space-8);">
+          <h3 style="color: var(--color-brown-dark); margin-bottom: var(--space-2);">No Research Inquiry Entered</h3>
+          <p style="color: var(--color-brown-secondary); font-size: var(--text-sm); margin-bottom: var(--space-4);">
+            Please enter a research topic or question from the homepage search to initiate an investigation.
+          </p>
+          <a href="index.html" class="btn btn-primary btn-sm">Return to Search</a>
+        </div>
+      `;
+    }
+    return;
+  }
 
   // =========================================================================
-  // 1. LIVE MODE HANDLING (Live execution via Firebase Cloud Functions)
+  // 1. LIVE MODE PATH (Firebase Cloud Functions: Tavily + Gemini)
   // =========================================================================
   if (!isDemo) {
-    if (!query) {
-      if (noticeContainer) {
-        noticeContainer.innerHTML = `
-          <div class="card" style="margin-bottom: var(--space-6);">
-            <h3>No Research Inquiry Provided</h3>
-            <p style="color: var(--color-brown-secondary); margin-bottom: var(--space-4);">Please enter a question on the dashboard to initiate live research.</p>
-            <a href="dashboard.html" class="btn btn-primary btn-sm">Return to Dashboard</a>
-          </div>
-        `;
-      }
-      return;
-    }
-
     if (inquiryQueryEl) inquiryQueryEl.textContent = `"${query}"`;
     if (modeBadgeEl) {
       modeBadgeEl.textContent = '● LIVE RESEARCH';
       modeBadgeEl.className = 'badge badge-brown';
     }
-    if (depthBadgeEl) depthBadgeEl.textContent = depthParam === 'deep' ? 'DEEP INVESTIGATION' : 'STANDARD INVESTIGATION';
 
-    if (noticeContainer) {
-      noticeContainer.innerHTML = `
-        <div class="card" style="margin-bottom: var(--space-6); background: var(--color-cream-subtle); border-left: 4px solid var(--color-blue-deep); padding: var(--space-3) var(--space-4);">
-          <div class="flex items-center justify-between" style="font-size: var(--text-xs); color: var(--color-brown-dark); flex-wrap: wrap; gap: 8px;">
-            <div><strong>LIVE GROUNDING ACTIVE:</strong> Querying indexed web via Tavily Search & analyzing evidence with Google Gemini AI.</div>
-            <span class="badge badge-blue">FIREBASE BACKEND</span>
-          </div>
-        </div>
-      `;
-    }
-
-    // Execute live orchestration pipeline
     try {
       await orchestrator.runInvestigation({
         query,
@@ -194,147 +184,124 @@ async function loadAndStartPipeline() {
         sampleData: null
       });
     } catch (err) {
-      console.error('[Workspace] Live orchestration failure:', err);
+      console.error('[Workspace] Live pipeline execution halted:', err);
 
-      let errorTitle = 'Live Research Pipeline Execution Failure';
-      let errorDesc = err.message || 'An unexpected error occurred during execution.';
+      let title = 'Live Research Pipeline Halted';
+      let desc = err.message || 'An unexpected error occurred during execution.';
 
       if (err.code === 'MISSING_API_SECRETS') {
-        errorTitle = 'Backend API Secrets Required';
-        errorDesc = 'Firebase Cloud Functions backend is online, but TAVILY_API_KEY or GEMINI_API_KEY is not configured. Configure secrets using "firebase functions:secrets:set" or switch to Demo Mode to test offline.';
+        title = 'Backend API Secrets Required';
+        desc = 'The Firebase backend is running, but TAVILY_API_KEY or GEMINI_API_KEY is not configured in Firebase Secret Manager. Set them using "firebase functions:secrets:set" or test offline using Demo Mode.';
       } else if (err.code === 'BACKEND_UNREACHABLE') {
-        errorTitle = 'Backend Cloud Function Unreachable';
-        errorDesc = 'Could not connect to Firebase Cloud Functions at /api/research. Ensure functions are running locally (npm run serve) or deployed to Firebase Hosting.';
+        title = 'Backend Cloud Function Unreachable';
+        desc = 'Could not reach /api/research. Ensure Firebase Cloud Functions are deployed or emulators are running locally.';
       } else if (err.code === 'TAVILY_RATE_LIMITED' || err.code === 'GEMINI_RATE_LIMITED') {
-        errorTitle = 'API Provider Rate Limited';
-        errorDesc = 'API rate limits encountered from Tavily or Google Gemini. Please wait a moment before retrying.';
+        title = 'API Rate Limit Reached';
+        desc = 'Provider rate limit encountered. Please wait a moment before retrying.';
       }
 
       if (noticeContainer) {
         noticeContainer.innerHTML = `
-          <div class="card card-brown" style="margin-bottom: var(--space-6); border-left: 4px solid #DF9B97;">
+          <div class="card" style="margin-bottom: var(--space-6); border-left: 4px solid var(--status-disputed-border); background: var(--status-disputed-bg);">
             <div class="flex items-center justify-between" style="margin-bottom: var(--space-2); flex-wrap: wrap; gap: 8px;">
               <span class="badge badge-status-disputed">PIPELINE EXECUTION HALTED</span>
-              <span style="font-family: var(--font-mono); font-size: 11px; color: var(--color-cream-base);">${err.code || 'ERROR'}</span>
+              <span style="font-family: var(--font-mono); font-size: 11px; color: var(--status-disputed-text);">${err.code || 'ERROR'}</span>
             </div>
-            <h3 style="color: var(--color-cream-ivory); margin-bottom: var(--space-2); font-size: var(--text-lg);">${escapeHtml(errorTitle)}</h3>
-            <p style="color: var(--color-cream-base); font-size: var(--text-sm); line-height: 1.6; margin-bottom: var(--space-4); opacity: 0.95;">
-              ${escapeHtml(errorDesc)}
+            <h3 style="color: var(--status-disputed-text); margin-bottom: 6px; font-size: var(--text-base);">${escapeHtml(title)}</h3>
+            <p style="color: var(--color-brown-dark); font-size: var(--text-xs); line-height: 1.6; margin-bottom: var(--space-4);">
+              ${escapeHtml(desc)}
             </p>
             <div class="flex items-center gap-3" style="flex-wrap: wrap;">
-              <a href="workspace.html?demo=true" class="btn btn-accent btn-sm">
-                ✦ Switch to Demo Mode
+              <a href="workspace.html?query=${encodeURIComponent(query)}&demo=true" class="btn btn-secondary btn-sm" style="font-size: 12px;">
+                ✦ Run in Demo Mode Instead
               </a>
-              <button class="btn btn-outline btn-sm" onclick="location.reload()" style="color: var(--color-cream-ivory); border-color: rgba(245, 235, 221, 0.4);">
-                Retry Investigation
+              <button class="btn btn-outline btn-sm" onclick="location.reload()" style="font-size: 12px;">
+                Retry
               </button>
-              <a href="dashboard.html" class="btn btn-outline btn-sm" style="color: var(--color-cream-ivory); border-color: rgba(245, 235, 221, 0.4);">
-                ← Return to Dashboard
+              <a href="index.html" class="btn btn-outline btn-sm" style="font-size: 12px;">
+                &larr; New Search
               </a>
             </div>
           </div>
         `;
       }
     }
-
     return;
   }
 
   // =========================================================================
-  // 2. DEMO MODE HANDLING
+  // 2. DEMO MODE PATH (Verified Reference Datasets)
   // =========================================================================
   let sampleData = null;
 
   if (demoIdParam) {
     sampleData = getDemoDatasetById(demoIdParam);
   } else if (query) {
-    // Check keyword match in existing verified demo datasets
-    const qLower = query.toLowerCase();
-    sampleData = DEMO_DATASETS.find(d => {
-      const titleLower = d.title.toLowerCase();
-      const topicLower = d.query.toLowerCase();
-      const catLower = d.category.toLowerCase();
-      return (
-        (qLower.includes('solar') && (titleLower.includes('solar') || topicLower.includes('solar'))) ||
-        (qLower.includes('quantum') && (titleLower.includes('quantum') || topicLower.includes('quantum'))) ||
-        ((qLower.includes('sodium') || qLower.includes('salt')) && (titleLower.includes('sodium') || topicLower.includes('sodium'))) ||
-        titleLower.includes(qLower) ||
-        topicLower.includes(qLower) ||
-        catLower.includes(qLower)
-      );
-    });
+    sampleData = findDemoDatasetByQuery(query);
   } else {
     sampleData = DEMO_DATASETS[0];
   }
 
-  // If in Demo mode but query does not match any pre-packaged dataset:
+  // If in Demo mode but query is completely unmapped
   if (!sampleData && query) {
     if (inquiryQueryEl) inquiryQueryEl.textContent = `"${query}"`;
-    if (modeBadgeEl) modeBadgeEl.textContent = '✦ DEMO MODE';
-    if (depthBadgeEl) depthBadgeEl.textContent = depthParam === 'deep' ? 'DEEP CHECK' : 'STANDARD CHECK';
+    if (modeBadgeEl) {
+      modeBadgeEl.textContent = '✦ DEMO MODE';
+      modeBadgeEl.className = 'badge badge-blue';
+    }
 
     if (noticeContainer) {
       noticeContainer.innerHTML = `
-        <div class="card" style="margin-bottom: var(--space-6); background: var(--color-cream-ivory); border: 1.5px solid var(--color-brown-border);">
-          <div class="flex items-center justify-between" style="flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-2);">
+        <div class="card" style="margin-bottom: var(--space-6); background: var(--color-cream-subtle); border: 1.5px solid var(--color-brown-border);">
+          <div class="flex items-center justify-between" style="margin-bottom: var(--space-2); flex-wrap: wrap; gap: 8px;">
             <span class="badge badge-blue">✦ DEMO ENVIRONMENT</span>
             <span style="font-family: var(--font-mono); font-size: 11px; color: var(--color-brown-secondary);">SELECT VERIFIED BENCHMARK</span>
           </div>
-          <h3 style="color: var(--color-brown-dark); margin-bottom: var(--space-2); font-size: var(--text-lg);">
+          <h3 style="color: var(--color-brown-dark); margin-bottom: 4px; font-size: var(--text-base);">
             Choose a Verified Demonstration Scenario
           </h3>
-          <p style="color: var(--color-brown-light); font-size: var(--text-sm); line-height: 1.6; margin-bottom: var(--space-4);">
-            Demo Mode operates strictly on verified empirical reference datasets. No pre-packaged dataset exists for "<em>${escapeHtml(query)}</em>". Select one of UNCOVER's 3 verified scenarios below to run the multi-agent pipeline:
+          <p style="color: var(--color-brown-secondary); font-size: var(--text-xs); line-height: 1.5; margin-bottom: var(--space-4);">
+            Demo Mode runs on authentic pre-compiled empirical literature. No dataset matches "<em>${escapeHtml(query)}</em>". Select a verified scenario below:
           </p>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-3);">
-            <a href="workspace.html?demoId=demo_solar_capacity_2024&demo=true" class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start; padding: 12px 16px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px;">
+            <a href="workspace.html?demoId=demo_ai_education&demo=true" class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start; padding: 10px 12px;">
               <div>
-                <div style="font-size: 11px; color: var(--color-brown-primary); font-weight: bold;">ENERGY & CLIMATE</div>
-                <div style="font-size: 13px; font-weight: 600;">Global Solar Capacity 2.0 TW Milestone (2024)</div>
+                <div style="font-size: 10px; color: var(--color-brown-primary); font-weight: 700;">EDUCATION & AI</div>
+                <div style="font-size: 12px; font-weight: 600;">Generative AI in Education</div>
               </div>
             </a>
-            <a href="workspace.html?demoId=demo_quantum_supremacy&demo=true" class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start; padding: 12px 16px;">
+            <a href="workspace.html?demoId=demo_solar_capacity_2024&demo=true" class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start; padding: 10px 12px;">
               <div>
-                <div style="font-size: 11px; color: var(--color-brown-primary); font-weight: bold;">TECH & PHYSICS</div>
-                <div style="font-size: 13px; font-weight: 600;">Quantum Computational Advantage Status</div>
+                <div style="font-size: 10px; color: var(--color-brown-primary); font-weight: 700;">ENERGY & CLIMATE</div>
+                <div style="font-size: 12px; font-weight: 600;">Global Solar 2 TW Milestone</div>
               </div>
             </a>
-            <a href="workspace.html?demoId=demo_dietary_sodium&demo=true" class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start; padding: 12px 16px;">
+            <a href="workspace.html?demoId=demo_social_media_attention&demo=true" class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start; padding: 10px 12px;">
               <div>
-                <div style="font-size: 11px; color: var(--color-brown-primary); font-weight: bold;">PUBLIC HEALTH</div>
-                <div style="font-size: 13px; font-weight: 600;">Dietary Sodium Reduction & J-Curve Debate</div>
+                <div style="font-size: 10px; color: var(--color-brown-primary); font-weight: 700;">COGNITIVE SCIENCE</div>
+                <div style="font-size: 12px; font-weight: 600;">Social Media & Attention Span</div>
+              </div>
+            </a>
+            <a href="workspace.html?demoId=demo_quantum_supremacy&demo=true" class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start; padding: 10px 12px;">
+              <div>
+                <div style="font-size: 10px; color: var(--color-brown-primary); font-weight: 700;">TECH & PHYSICS</div>
+                <div style="font-size: 12px; font-weight: 600;">Quantum Advantage Status</div>
               </div>
             </a>
           </div>
-        </div>
-      `;
-    }
-
-    const agentIds = ['agent_research', 'agent_factchecker', 'agent_conflict', 'agent_report'];
-    agentIds.forEach(id => {
-      setAgentCardState(id, AgentStatus.WAITING, 'Select a verified demonstration scenario above to begin');
-    });
-
-    if (feedContainer) {
-      feedContainer.innerHTML = `
-        <div style="text-align: center; padding: var(--space-6); color: var(--color-brown-secondary); font-size: var(--text-sm);">
-          Select a verified scenario above to execute the four-agent corroboration feed.
         </div>
       `;
     }
     return;
   }
 
-  // Clear notice container when running a valid demo scenario
-  if (noticeContainer) noticeContainer.innerHTML = '';
-
-  const activeQuery = sampleData ? sampleData.query : (query || DEMO_DATASETS[0].query);
-
+  const activeQuery = sampleData.query;
   if (inquiryQueryEl) inquiryQueryEl.textContent = `"${activeQuery}"`;
-  if (modeBadgeEl) modeBadgeEl.textContent = '✦ DEMO PIPELINE';
-  if (depthBadgeEl) depthBadgeEl.textContent = depthParam === 'deep' ? 'DEEP CHECK' : 'STANDARD CHECK';
+  if (modeBadgeEl) {
+    modeBadgeEl.textContent = '✦ DEMO DATASET';
+    modeBadgeEl.className = 'badge badge-blue';
+  }
 
-  // Execute genuine 4-agent demo orchestration
   try {
     await orchestrator.runInvestigation({
       query: activeQuery,
@@ -343,212 +310,125 @@ async function loadAndStartPipeline() {
       sampleData
     });
   } catch (err) {
-    console.error('[Workspace] Orchestration run error:', err);
+    console.error('[Workspace] Demo orchestration error:', err);
   }
 }
 
 /**
- * Update the Top Progress Tracker Bar
+ * Update Progress Bar and Status based on Orchestrator summary
  */
-function updatePipelineTracker(summary) {
-  const stepItems = document.querySelectorAll('.pipeline-step-item');
-  const current = summary.currentStep;
+function updateProgressUI(summary) {
+  const step = summary.currentStep || 0;
+  const pct = Math.min(Math.round((step / 4) * 100), 100);
 
-  stepItems.forEach((item, idx) => {
-    const stepNum = idx + 1;
-    item.classList.remove('active', 'completed');
+  if (progressFillEl) {
+    progressFillEl.style.width = `${Math.max(pct, 5)}%`;
+  }
+  if (progressPercentLabelEl) {
+    progressPercentLabelEl.textContent = `${pct}%`;
+  }
 
-    if (summary.pipelineStatus === 'COMPLETED' || stepNum < current) {
-      item.classList.add('completed');
-      const statusEl = item.querySelector('.pipeline-step-status');
-      if (statusEl) statusEl.textContent = 'DONE';
-    } else if (stepNum === current && summary.pipelineStatus === 'RUNNING') {
-      item.classList.add('active');
-      const statusEl = item.querySelector('.pipeline-step-status');
-      if (statusEl) statusEl.textContent = 'EXECUTING';
-    } else {
-      const statusEl = item.querySelector('.pipeline-step-status');
-      if (statusEl) statusEl.textContent = 'QUEUED';
-    }
-  });
+  const phaseLabels = [
+    'Initializing investigation...',
+    '01. Research Agent: Searching authoritative web evidence...',
+    '02. Fact-Checker Agent: Corroborating claims against source snippets...',
+    '03. Conflict Analyst: Identifying cross-source discrepancies...',
+    '04. Report Generator: Synthesizing final intelligence dossier...'
+  ];
+
+  if (currentPhaseLabelEl) {
+    currentPhaseLabelEl.textContent = phaseLabels[step] || 'Synthesizing report...';
+  }
+
+  if (pipelineStatusBadgeEl && summary.pipelineStatus === 'RUNNING') {
+    pipelineStatusBadgeEl.textContent = 'RUNNING';
+    pipelineStatusBadgeEl.className = 'badge badge-blue';
+  }
 }
 
 /**
- * Reset all visual cards to WAITING
+ * Set State for a single timeline row
  */
-function resetAllAgentCards() {
-  const agentIds = ['agent_research', 'agent_factchecker', 'agent_conflict', 'agent_report'];
-  agentIds.forEach(id => {
-    setAgentCardState(id, AgentStatus.WAITING, 'Awaiting pipeline dispatch...');
-    const consoleBox = document.getElementById(`${id}_console`);
-    if (consoleBox) consoleBox.innerHTML = '<div class="console-entry text-muted">Ready for execution stream...</div>';
-    const metricsBadge = document.getElementById(`${id}_metric`);
-    if (metricsBadge) metricsBadge.textContent = '0 items';
-  });
+function setAgentRowState(agentId, stateClass, statusLabel, message) {
+  const row = document.getElementById(`row_${agentId}`);
+  const statusTag = document.getElementById(`status_${agentId}`);
+  const msgEl = document.getElementById(`msg_${agentId}`);
+
+  if (row) {
+    row.className = `agent-timeline-row state-${stateClass}`;
+  }
+  if (statusTag) {
+    statusTag.textContent = statusLabel;
+  }
+  if (msgEl && message) {
+    msgEl.textContent = message;
+  }
 }
 
-/**
- * Set Card visual status & task text
- */
-function setAgentCardState(agentId, status, taskDescription) {
-  const card = document.getElementById(`${agentId}_card`);
-  if (!card) return;
-
-  card.classList.remove('status-waiting', 'status-running', 'status-completed', 'status-failed');
-  card.classList.add(`status-${status.toLowerCase()}`);
-
-  const badge = card.querySelector('.agent-status-badge');
-  if (badge) badge.textContent = status;
-
-  const taskBanner = card.querySelector('.agent-task-banner');
-  if (taskBanner) taskBanner.textContent = taskDescription;
+function updateAgentMessage(agentId, message) {
+  const msgEl = document.getElementById(`msg_${agentId}`);
+  if (msgEl && message) {
+    msgEl.textContent = message;
+  }
 }
 
-/**
- * Append live log entries into the agent's console box
- */
 function appendAgentLog(agentId, message) {
-  const consoleBox = document.getElementById(`${agentId}_console`);
-  if (!consoleBox) return;
-
-  // Clear placeholder if first entry
-  if (consoleBox.querySelector('.text-muted')) {
-    consoleBox.innerHTML = '';
-  }
+  const logStream = document.getElementById(`logs_${agentId}`);
+  if (!logStream) return;
 
   const entry = document.createElement('div');
-  entry.className = 'console-entry';
-  const time = new Date().toLocaleTimeString();
-  entry.innerHTML = `<span class="highlight">[${time}]</span> ${escapeHtml(message)}`;
-  consoleBox.appendChild(entry);
-  consoleBox.scrollTop = consoleBox.scrollHeight;
+  entry.className = 'log-entry';
+  entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+  logStream.appendChild(entry);
+  logStream.scrollTop = logStream.scrollHeight;
+}
+
+function resetAllRows() {
+  const ids = ['agent_research', 'agent_factchecker', 'agent_conflict', 'agent_report'];
+  ids.forEach(id => {
+    setAgentRowState(id, 'pending', 'PENDING', 'Awaiting preceding stage...');
+    const logStream = document.getElementById(`logs_${id}`);
+    if (logStream) logStream.innerHTML = '<div class="log-entry text-muted">Ready for execution stream...</div>';
+  });
 }
 
 /**
- * Update agent metrics badge
- */
-function updateAgentMetrics(agentId, output) {
-  const metricEl = document.getElementById(`${agentId}_metric`);
-  if (!metricEl || !output) return;
-
-  switch (agentId) {
-    case 'agent_research':
-      metricEl.textContent = `${output.sources ? output.sources.length : 0} Sources | ${output.extractedClaims ? output.extractedClaims.length : 0} Claims`;
-      break;
-    case 'agent_factchecker':
-      metricEl.textContent = `${output.stats ? output.stats.verified : 0} Verified | ${output.stats ? output.stats.disputed : 0} Disputed`;
-      break;
-    case 'agent_conflict':
-      metricEl.textContent = `${output.totalConflicts || 0} Conflicts Found`;
-      break;
-    case 'agent_report':
-      metricEl.textContent = `Score: ${output.compiledStats ? output.compiledStats.confidenceScore : 85}%`;
-      break;
-  }
-}
-
-/**
- * Render Claims Feed as Fact-Checker produces claims
- */
-function renderClaimsFeed(claims) {
-  if (!feedContainer || !Array.isArray(claims)) return;
-
-  feedContainer.innerHTML = claims.map((c, idx) => `
-    <div class="claim-feed-card">
-      <div class="claim-feed-top">
-        <span class="badge ${getStatusBadgeClass(c.status)}">${c.status}</span>
-        <span style="font-family: var(--font-mono); font-size: 11px; color: var(--color-brown-secondary);">
-          Certainty: ${(c.confidenceScore * 100).toFixed(0)}%
-        </span>
-      </div>
-      <div class="claim-feed-statement">
-        Claim #${idx + 1}: "${escapeHtml(c.statement)}"
-      </div>
-      <div class="claim-feed-rationale">
-        <strong>Evidence Rationale:</strong> ${escapeHtml(c.rationale)}
-      </div>
-    </div>
-  `).join('');
-}
-
-/**
- * Reveal the Dossier Ready Banner upon completion
+ * Reveal Final Completion Card and handle auto-redirect
  */
 function revealDossierBanner(dossier) {
   if (!dossierBanner) return;
 
-  const titleEl = document.getElementById('dossierBannerTitle');
-  const summaryEl = document.getElementById('dossierBannerSummary');
-  const viewDossierBtn = document.getElementById('viewDossierBtn');
+  dossierBanner.style.display = 'block';
+  dossierBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-  if (titleEl) titleEl.textContent = dossier.title || 'Research Dossier Synthesized';
-  if (summaryEl && dossier.reportGeneratorAgent) {
-    summaryEl.textContent = dossier.reportGeneratorAgent.executiveSummary || 'Executive summary ready for inspection.';
+  const reportUrl = `report.html?id=${encodeURIComponent(dossier.id)}`;
+  if (viewReportBtn) {
+    viewReportBtn.href = reportUrl;
   }
 
-  if (viewDossierBtn) {
-    viewDossierBtn.onclick = () => {
-      window.location.href = `report.html?id=${dossier.id}`;
-    };
+  // Smooth automatic transition so the user gets their report seamlessly
+  let countdown = 2;
+  if (redirectCountdownMsg) {
+    redirectCountdownMsg.textContent = `Opening report automatically in ${countdown}s...`;
   }
 
-  dossierBanner.classList.add('active');
-  dossierBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
+  autoRedirectTimer = setInterval(() => {
+    countdown -= 1;
+    if (countdown <= 0) {
+      clearInterval(autoRedirectTimer);
+      window.location.href = reportUrl;
+    } else {
+      if (redirectCountdownMsg) {
+        redirectCountdownMsg.textContent = `Opening report automatically in ${countdown}s...`;
+      }
+    }
+  }, 1000);
 
-/**
- * Inspector Modal: Inspect Agent Input/Output JSON
- */
-function openInspector(agentId) {
-  if (!inspectorModal || !orchestrator) return;
-  activeInspectAgentId = agentId;
-
-  const names = {
-    agent_research: 'Research Agent',
-    agent_factchecker: 'Fact-Checker Agent',
-    agent_conflict: 'Conflict Analyst Agent',
-    agent_report: 'Report Generator Agent'
-  };
-
-  if (inspectorModalTitle) {
-    inspectorModalTitle.textContent = `Inspect I/O: ${names[agentId] || agentId}`;
-  }
-
-  renderInspectorContent();
-  inspectorModal.classList.add('open');
-}
-
-function closeInspector() {
-  if (inspectorModal) inspectorModal.classList.remove('open');
-}
-
-function renderInspectorContent() {
-  if (!inspectorCodeBlock || !orchestrator) return;
-  const inspection = orchestrator.getAgentInspection(activeInspectAgentId);
-
-  if (!inspection) {
-    inspectorCodeBlock.textContent = '// No inspection data available for this agent.';
-    return;
-  }
-
-  let dataToDisplay;
-  if (activeInspectTab === 'input') {
-    dataToDisplay = inspection.input || { message: 'Agent input has not been dispatched yet.' };
-  } else if (activeInspectTab === 'output') {
-    dataToDisplay = inspection.output || { message: 'Agent output has not completed yet.' };
-  } else {
-    dataToDisplay = inspection.logs || [];
-  }
-
-  inspectorCodeBlock.textContent = JSON.stringify(dataToDisplay, null, 2);
-}
-
-function getStatusBadgeClass(status) {
-  switch (status) {
-    case 'VERIFIED': return 'badge-status-verified';
-    case 'PARTIALLY_VERIFIED': return 'badge-status-partially';
-    case 'DISPUTED': return 'badge-status-disputed';
-    default: return 'badge-status-unverified';
+  // If user clicks button directly, clear auto-redirect
+  if (viewReportBtn) {
+    viewReportBtn.addEventListener('click', () => {
+      clearInterval(autoRedirectTimer);
+    });
   }
 }
 

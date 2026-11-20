@@ -31,7 +31,7 @@ async function runFrontendTestSuite() {
 
   // 1. Dataset Verification
   await test("Demo datasets contain valid benchmarks with distinct domains", async () => {
-    assert.strictEqual(DEMO_DATASETS.length, 3);
+    assert.strictEqual(DEMO_DATASETS.length, 5);
     const solar = getDemoDatasetById("demo_solar_capacity_2024");
     assert.ok(solar, "Solar dataset must exist");
     assert.strictEqual(solar.isDemo, true);
@@ -42,6 +42,12 @@ async function runFrontendTestSuite() {
 
     const sodium = getDemoDatasetById("demo_dietary_sodium");
     assert.ok(sodium, "Sodium dataset must exist");
+
+    const aiEdu = getDemoDatasetById("demo_ai_education");
+    assert.ok(aiEdu, "AI in Education dataset must exist");
+
+    const smAttention = getDemoDatasetById("demo_social_media_attention");
+    assert.ok(smAttention, "Social Media and Attention dataset must exist");
   });
 
   // 2. Orchestrator Initialization & Agent Isolation
@@ -143,6 +149,73 @@ async function runFrontendTestSuite() {
     assert.strictEqual(orchestrator.state.agentStates.agent_factchecker.status, AgentStatus.WAITING);
     assert.strictEqual(orchestrator.state.agentStates.agent_conflict.status, AgentStatus.WAITING);
     assert.strictEqual(orchestrator.state.agentStates.agent_report.status, AgentStatus.WAITING);
+  });
+
+  // 6. Homepage Example Queries Resolve Accurately
+  await test("Homepage example queries resolve to verified benchmark datasets", async () => {
+    const { findDemoDatasetByQuery } = await import("../public/js/demoData.js");
+    
+    const aiMatch = findDemoDatasetByQuery("AI in education");
+    assert.strictEqual(aiMatch.id, "demo_ai_education");
+
+    const climateMatch = findDemoDatasetByQuery("Climate change");
+    assert.strictEqual(climateMatch.id, "demo_solar_capacity_2024");
+
+    const smMatch = findDemoDatasetByQuery("Social media and attention");
+    assert.strictEqual(smMatch.id, "demo_social_media_attention");
+
+    const quantumMatch = findDemoDatasetByQuery("Quantum computing");
+    assert.strictEqual(quantumMatch.id, "demo_quantum_supremacy");
+  });
+
+  // 7. Full Execution of New AI in Education Scenario
+  await test("AI in Education demo runs end-to-end with all 4 agents completing", async () => {
+    const orchestrator = new MultiAgentOrchestrator();
+    const aiEdu = getDemoDatasetById("demo_ai_education");
+
+    const result = await orchestrator.runInvestigation({
+      query: aiEdu.query,
+      depth: "standard",
+      isDemo: true,
+      sampleData: aiEdu
+    });
+
+    assert.ok(result, "Resulting dossier must be returned");
+    assert.strictEqual(orchestrator.state.pipelineStatus, "COMPLETED");
+    assert.strictEqual(result.stats.verifiedCount, 2);
+    assert.strictEqual(result.stats.disputedCount, 1);
+  });
+
+  // 8. Full Execution of Social Media & Attention Scenario
+  await test("Social Media & Attention demo runs end-to-end with all 4 agents completing", async () => {
+    const orchestrator = new MultiAgentOrchestrator();
+    const sm = getDemoDatasetById("demo_social_media_attention");
+
+    const result = await orchestrator.runInvestigation({
+      query: sm.query,
+      depth: "standard",
+      isDemo: true,
+      sampleData: sm
+    });
+
+    assert.ok(result, "Resulting dossier must be returned");
+    assert.strictEqual(orchestrator.state.pipelineStatus, "COMPLETED");
+    assert.strictEqual(result.stats.verifiedCount, 2);
+    assert.strictEqual(result.stats.disputedCount, 1);
+  });
+
+  // 9. StorageService LocalStorage Mock Fallback & Operations
+  await test("StorageService manages research history, active state, and deletion safely", async () => {
+    // In Node environment without window.localStorage, StorageService safely returns defaults without crashing
+    const history = StorageService.getHistory();
+    assert.ok(Array.isArray(history));
+
+    const active = StorageService.getActiveResearch();
+    assert.strictEqual(active, null);
+
+    const settings = StorageService.getSettings();
+    assert.ok(settings);
+    assert.strictEqual(typeof settings.demoModeDefault, "boolean");
   });
 
   console.log("\n=================================================");
