@@ -123,6 +123,12 @@ async function runFrontendTestSuite() {
 
   // 5. Live Mode Unreachable Backend Graceful Failure (Zero Fake Completion)
   await test("Live Mode without running backend fails honestly on Agent 1 and leaves downstream WAITING", async () => {
+    const originalFetch = global.fetch;
+    // Simulate complete network offline
+    global.fetch = async () => {
+      throw new Error("Failed to connect (ECONNREFUSED)");
+    };
+
     const orchestrator = new MultiAgentOrchestrator();
     let errorFired = false;
 
@@ -140,7 +146,12 @@ async function runFrontendTestSuite() {
       });
       assert.fail("Should have thrown connection error");
     } catch (err) {
-      assert.ok(err.message.includes("Failed to connect") || err.message.includes("backend"));
+      assert.ok(
+        err.message.toLowerCase().includes("failed to connect") ||
+        err.code === "BACKEND_UNREACHABLE"
+      );
+    } finally {
+      global.fetch = originalFetch;
     }
 
     assert.strictEqual(errorFired, true);

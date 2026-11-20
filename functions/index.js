@@ -12,6 +12,34 @@ const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const { executeLivePipeline } = require("./services/pipeline");
 
+const fs = require("fs");
+const path = require("path");
+
+// Automatically load functions/.env.local or functions/.env for local emulator development
+function loadLocalEnv(filename) {
+  try {
+    const fullPath = path.resolve(__dirname, filename);
+    if (!fs.existsSync(fullPath)) return;
+    const lines = fs.readFileSync(fullPath, "utf8").split("\n");
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith("#")) continue;
+      const idx = line.indexOf("=");
+      if (idx > 0) {
+        const key = line.slice(0, idx).trim();
+        const val = line.slice(idx + 1).trim().replace(/^["']|["']$/g, "");
+        if (!process.env[key]) {
+          process.env[key] = val;
+        }
+      }
+    }
+  } catch (e) {}
+}
+loadLocalEnv(".env.local");
+loadLocalEnv(".env");
+
+const config = require("./config");
+
 // Define secrets in Firebase Secret Manager
 const tavilyApiKey = defineSecret("TAVILY_API_KEY");
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
@@ -42,6 +70,18 @@ exports.api = onRequest({
   timeoutSeconds: 120,
   memory: "512MiB"
 }, async (req, res) => {
+  // Always enforce permissive CORS headers across all origins
+  const origin = req.headers.origin || "*";
+  res.set("Access-Control-Allow-Origin", origin);
+  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
+  res.set("Access-Control-Max-Age", "3600");
+
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+
   // Extract client IP
   const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown_ip";
 
@@ -85,6 +125,7 @@ exports.api = onRequest({
       status: "ok",
       service: "UNCOVER Multi-Agent Research API",
       version: "1.0.0",
+      aiModel: config.ai.model,
       liveApisReady: Boolean(tavilyKey && geminiKey),
       hasTavilyKey: Boolean(tavilyKey),
       hasGeminiKey: Boolean(geminiKey),

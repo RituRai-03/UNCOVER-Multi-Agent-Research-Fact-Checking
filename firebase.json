@@ -16,5 +16,20 @@
   "functions": {
     "source": "functions",
     "runtime": "nodejs20"
+  },
+  "emulators": {
+    "functions": {
+      "port": 5001,
+      "host": "0.0.0.0"
+    },
+    "hosting": {
+      "port": 5000,
+      "host": "0.0.0.0"
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000,
+      "host": "0.0.0.0"
+    }
   }
 }

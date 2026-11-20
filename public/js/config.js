@@ -22,10 +22,23 @@ export const APP_CONFIG = {
     bluePale: "#DCECF2"
   },
 
-  // Backend API URL (Points to Firebase Cloud Functions)
-  apiBaseUrl: (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))
-    ? "http://localhost:5001/uncover-multi-agent/us-central1/api"
-    : "/api",
+  // Backend API URL (Smart Dynamic Resolver for Local Emulator & Production)
+  get apiBaseUrl() {
+    if (typeof window === "undefined") {
+      return "http://127.0.0.1:5001/uncover-multi-agent/us-central1/api";
+    }
+
+    const { hostname, port, protocol } = window.location;
+
+    // 1. If running on Firebase Hosting (production or port 5000 emulator)
+    if (port === "5000" || (!hostname.includes("localhost") && hostname !== "127.0.0.1" && protocol !== "file:")) {
+      return "/api";
+    }
+
+    // 2. Local development server (VS Code Live Server on 5500, npm start on 3000, etc.)
+    // Always use 127.0.0.1 to guarantee IPv4 connection to the Functions emulator on Windows
+    return "http://127.0.0.1:5001/uncover-multi-agent/us-central1/api";
+  },
 
   // LocalStorage Keys
   storageKeys: {

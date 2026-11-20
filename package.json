@@ -6,6 +6,7 @@
   "main": "functions/index.js",
   "scripts": {
     "start": "npx serve public -l 3000",
+    "start:server": "node functions/server.js",
     "test": "npm --prefix functions test && node test/frontend.test.js && node test/assets.test.js",
     "test:backend": "npm --prefix functions test",
     "test:frontend": "node test/frontend.test.js && node test/assets.test.js",

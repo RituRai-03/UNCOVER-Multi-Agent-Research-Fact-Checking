@@ -186,44 +186,98 @@ async function loadAndStartPipeline() {
     } catch (err) {
       console.error('[Workspace] Live pipeline execution halted:', err);
 
-      let title = 'Live Research Pipeline Halted';
-      let desc = err.message || 'An unexpected error occurred during execution.';
-
-      if (err.code === 'MISSING_API_SECRETS') {
-        title = 'Backend API Secrets Required';
-        desc = 'The Firebase backend is running, but TAVILY_API_KEY or GEMINI_API_KEY is not configured in Firebase Secret Manager. Set them using "firebase functions:secrets:set" or test offline using Demo Mode.';
-      } else if (err.code === 'BACKEND_UNREACHABLE') {
-        title = 'Backend Cloud Function Unreachable';
-        desc = 'Could not reach /api/research. Ensure Firebase Cloud Functions are deployed or emulators are running locally.';
-      } else if (err.code === 'TAVILY_RATE_LIMITED' || err.code === 'GEMINI_RATE_LIMITED') {
-        title = 'API Rate Limit Reached';
-        desc = 'Provider rate limit encountered. Please wait a moment before retrying.';
+      if (pipelineStatusBadgeEl) {
+        pipelineStatusBadgeEl.textContent = err.code === 'MISSING_API_SECRETS' ? 'API KEYS NEEDED' : 'HALTED';
+        pipelineStatusBadgeEl.className = err.code === 'MISSING_API_SECRETS' ? 'badge badge-blue' : 'badge badge-status-disputed';
       }
 
       if (noticeContainer) {
-        noticeContainer.innerHTML = `
-          <div class="card" style="margin-bottom: var(--space-6); border-left: 4px solid var(--status-disputed-border); background: var(--status-disputed-bg);">
-            <div class="flex items-center justify-between" style="margin-bottom: var(--space-2); flex-wrap: wrap; gap: 8px;">
-              <span class="badge badge-status-disputed">PIPELINE EXECUTION HALTED</span>
-              <span style="font-family: var(--font-mono); font-size: 11px; color: var(--status-disputed-text);">${err.code || 'ERROR'}</span>
+        if (err.code === 'MISSING_API_SECRETS') {
+          const missingKeys = (err.missing && err.missing.length > 0) ? err.missing.join(', ') : 'TAVILY_API_KEY, GEMINI_API_KEY';
+          noticeContainer.innerHTML = `
+            <div class="card" style="margin-bottom: var(--space-6); border-left: 4px solid var(--color-blue-accent); background: var(--color-cream-subtle); box-shadow: var(--shadow-sm);">
+              <div class="flex items-center justify-between" style="margin-bottom: var(--space-2); flex-wrap: wrap; gap: 8px;">
+                <span class="badge badge-blue">✦ BACKEND CONNECTED (EMULATOR ACTIVE)</span>
+                <span style="font-family: var(--font-mono); font-size: 11px; color: var(--color-brown-secondary);">SECRETS REQUIRED</span>
+              </div>
+              <h3 style="color: var(--color-brown-dark); margin-bottom: 6px; font-size: var(--text-base);">
+                Firebase Backend Active &mdash; API Keys Required for Live Web Grounding
+              </h3>
+              <p style="color: var(--color-brown-primary); font-size: var(--text-xs); line-height: 1.6; margin-bottom: var(--space-3);">
+                The Firebase Functions emulator responded successfully. However, live research requires API credentials to query the web and perform Gemini reasoning.
+              </p>
+              <div style="background: var(--color-cream-base); border: 1px solid var(--color-brown-border); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: var(--space-4); font-family: var(--font-mono); font-size: 11px; color: var(--color-brown-dark);">
+                <div style="font-weight: 700; margin-bottom: 4px; color: var(--color-brown-dark);">Missing API Credentials: <span style="color: var(--status-disputed-text);">${escapeHtml(missingKeys)}</span></div>
+                <div style="color: var(--color-brown-secondary); margin-bottom: 4px;">To enable live web search &amp; Gemini AI locally, create <code>functions/.env.local</code>:</div>
+                <div style="background: rgba(0,0,0,0.04); padding: 6px 10px; border-radius: 4px; margin-top: 4px;">
+                  TAVILY_API_KEY=tvly-your-tavily-key<br>
+                  GEMINI_API_KEY=AIzaSy-your-gemini-key
+                </div>
+              </div>
+              <div class="flex items-center gap-3" style="flex-wrap: wrap;">
+                <a href="workspace.html?query=${encodeURIComponent(query)}&demo=true" class="btn btn-secondary btn-sm" style="font-size: 12px;">
+                  ✦ Run Demo Mode (Instant)
+                </a>
+                <button class="btn btn-outline btn-sm" onclick="location.reload()" style="font-size: 12px;">
+                  Retry
+                </button>
+                <a href="index.html" class="btn btn-outline btn-sm" style="font-size: 12px;">
+                  &larr; New Search
+                </a>
+              </div>
             </div>
-            <h3 style="color: var(--status-disputed-text); margin-bottom: 6px; font-size: var(--text-base);">${escapeHtml(title)}</h3>
-            <p style="color: var(--color-brown-dark); font-size: var(--text-xs); line-height: 1.6; margin-bottom: var(--space-4);">
-              ${escapeHtml(desc)}
-            </p>
-            <div class="flex items-center gap-3" style="flex-wrap: wrap;">
-              <a href="workspace.html?query=${encodeURIComponent(query)}&demo=true" class="btn btn-secondary btn-sm" style="font-size: 12px;">
-                ✦ Run in Demo Mode Instead
-              </a>
-              <button class="btn btn-outline btn-sm" onclick="location.reload()" style="font-size: 12px;">
-                Retry
-              </button>
-              <a href="index.html" class="btn btn-outline btn-sm" style="font-size: 12px;">
-                &larr; New Search
-              </a>
+          `;
+        } else if (err.code === 'BACKEND_UNREACHABLE') {
+          noticeContainer.innerHTML = `
+            <div class="card" style="margin-bottom: var(--space-6); border-left: 4px solid var(--status-disputed-border); background: var(--status-disputed-bg);">
+              <div class="flex items-center justify-between" style="margin-bottom: var(--space-2); flex-wrap: wrap; gap: 8px;">
+                <span class="badge badge-status-disputed">BACKEND UNREACHABLE</span>
+                <span style="font-family: var(--font-mono); font-size: 11px; color: var(--status-disputed-text);">CONNECTION ERROR</span>
+              </div>
+              <h3 style="color: var(--status-disputed-text); margin-bottom: 6px; font-size: var(--text-base);">
+                Cannot Connect to Firebase Cloud Functions
+              </h3>
+              <p style="color: var(--color-brown-dark); font-size: var(--text-xs); line-height: 1.6; margin-bottom: var(--space-3);">
+                The frontend could not connect to <code>http://127.0.0.1:5001</code>. If running locally, ensure the Firebase Functions emulator is active.
+              </p>
+              <div style="background: var(--color-cream-base); border: 1px solid var(--color-brown-border); border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: var(--space-4); font-family: var(--font-mono); font-size: 11px; color: var(--color-brown-dark);">
+                Start emulator: <code>npx firebase-tools emulators:start --only functions --project uncover-multi-agent</code>
+              </div>
+              <div class="flex items-center gap-3" style="flex-wrap: wrap;">
+                <a href="workspace.html?query=${encodeURIComponent(query)}&demo=true" class="btn btn-secondary btn-sm" style="font-size: 12px;">
+                  ✦ Run Demo Mode (Instant)
+                </a>
+                <button class="btn btn-outline btn-sm" onclick="location.reload()" style="font-size: 12px;">
+                  Retry
+                </button>
+                <a href="index.html" class="btn btn-outline btn-sm" style="font-size: 12px;">
+                  &larr; New Search
+                </a>
+              </div>
             </div>
-          </div>
-        `;
+          `;
+        } else {
+          noticeContainer.innerHTML = `
+            <div class="card" style="margin-bottom: var(--space-6); border-left: 4px solid var(--status-disputed-border); background: var(--status-disputed-bg);">
+              <div class="flex items-center justify-between" style="margin-bottom: var(--space-2); flex-wrap: wrap; gap: 8px;">
+                <span class="badge badge-status-disputed">PIPELINE EXECUTION HALTED</span>
+                <span style="font-family: var(--font-mono); font-size: 11px; color: var(--status-disputed-text);">${err.code || 'ERROR'}</span>
+              </div>
+              <h3 style="color: var(--status-disputed-text); margin-bottom: 6px; font-size: var(--text-base);">${escapeHtml(err.message || 'Pipeline halted')}</h3>
+              <div class="flex items-center gap-3" style="flex-wrap: wrap; margin-top: var(--space-4);">
+                <a href="workspace.html?query=${encodeURIComponent(query)}&demo=true" class="btn btn-secondary btn-sm" style="font-size: 12px;">
+                  ✦ Run in Demo Mode Instead
+                </a>
+                <button class="btn btn-outline btn-sm" onclick="location.reload()" style="font-size: 12px;">
+                  Retry
+                </button>
+                <a href="index.html" class="btn btn-outline btn-sm" style="font-size: 12px;">
+                  &larr; New Search
+                </a>
+              </div>
+            </div>
+          `;
+        }
       }
     }
     return;

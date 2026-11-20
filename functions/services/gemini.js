@@ -3,13 +3,19 @@
  * Structured reasoning, claim verification, conflict analysis & report synthesis
  */
 
-const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+const config = require("../config");
+
+const DEFAULT_MODEL = config.ai.model;
 
 /**
  * Call Gemini API with structured JSON output enforcement
  */
 async function callGemini(userPrompt, systemInstruction, options = {}) {
-  const { apiKey, model = DEFAULT_MODEL, temperature = 0.2 } = options;
+  const { 
+    apiKey, 
+    model = DEFAULT_MODEL, 
+    temperature = config.ai.temperature || 0.2 
+  } = options;
 
   if (!apiKey || typeof apiKey !== "string" || !apiKey.trim()) {
     const error = new Error("Gemini API key is missing or not configured in Firebase Cloud Functions.");
